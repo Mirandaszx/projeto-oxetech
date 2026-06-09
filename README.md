@@ -4,7 +4,7 @@ Projeto de front-end desenvolvido com HTML, CSS, Bootstrap e JavaScript puro par
 
 ## Objetivo
 
-Criar um diário de treino simples e responsivo, permitindo cadastrar exercícios, acompanhar o progresso e registrar o histórico de execução em uma interface prática. Como se trata de uma atividade de front-end, os dados existem apenas durante a sessão aberta da página.
+Criar um diário de treino simples e responsivo, permitindo cadastrar exercícios, acompanhar o progresso e registrar o histórico de execução em uma interface prática. 
 
 ## Funcionalidades
 
