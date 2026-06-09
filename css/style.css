@@ -1,0 +1,554 @@
+:root {
+    color-scheme: dark;
+    --fundo: #111112;
+    --texto: #f0e7de;
+    --verde: #c77742;
+    --verde-escuro: #8e4d27;
+    --azul: #b86231;
+    --azul-escuro: #7b3f1f;
+    --vinho: #d79263;
+    --linha: #2f2925;
+    --card: #1a1a1b;
+    --alerta: #2a221d;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--fundo);
+    color: var(--texto);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.site-header {
+    background:
+        linear-gradient(135deg, rgba(15, 15, 15, 0.96), rgba(91, 49, 24, 0.84)),
+        url("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80");
+    background-position: center;
+    background-size: cover;
+    color: #ffffff;
+}
+
+.topo,
+.filtros,
+.lista-cabecalho,
+.aluno-card,
+.cronometro,
+.form-topo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.marca {
+    display: inline-block;
+    margin-bottom: 0.45rem;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid rgba(255, 224, 204, 0.4);
+    border-radius: 6px;
+    color: #ffe0c4;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.site-header h1,
+.site-header p {
+    margin: 0;
+}
+
+.site-header h1 {
+    max-width: 720px;
+    font-size: 2.25rem;
+    font-weight: 700;
+}
+
+.site-header p {
+    margin-top: 0.35rem;
+    color: #e7c7ae;
+}
+
+.painel,
+.lista-treino,
+.resumo,
+.filtros,
+.semana,
+.app-dashboard,
+.cronometro,
+.progresso,
+.modelos,
+.historico {
+    background: var(--card);
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.app-dashboard {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+}
+
+.mensagem-status {
+    margin-bottom: 1rem;
+}
+
+.row[aria-label="Cadastro e resumo do diário"] > article {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.row[aria-label="Cadastro e resumo do diário"] > article > .mt-4 {
+    margin-top: 0 !important;
+}
+
+.aluno-card {
+    justify-content: flex-start;
+}
+
+.avatar {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--azul);
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.aluno-card strong {
+    display: block;
+    font-size: 1.05rem;
+}
+
+.painel {
+    padding: 1.25rem;
+}
+
+.painel h2,
+.lista-treino h2,
+.modelos h2,
+.historico h2 {
+    margin-bottom: 1rem;
+    font-size: 1.35rem;
+}
+
+.form-topo h2,
+.lista-cabecalho h2 {
+    margin-bottom: 0;
+}
+
+.lista-cabecalho {
+    margin-bottom: 1rem;
+}
+
+.botoes-formulario {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.modelos,
+.progresso,
+.historico {
+    padding: 1.25rem;
+}
+
+.botoes-modelos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.resumo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+}
+
+.resumo div {
+    flex: 1 1 150px;
+    min-width: 150px;
+    padding: 0.85rem 0.9rem 0.85rem 1rem;
+    border: 1px solid #342b26;
+    border-left: 4px solid var(--azul);
+    border-radius: 6px;
+    background: #202021;
+}
+
+.rotulo {
+    display: block;
+    color: #b8a79c;
+    font-size: 0.9rem;
+}
+
+.resumo strong {
+    color: var(--azul);
+    font-size: 1.8rem;
+}
+
+.cronometro {
+    padding: 1rem 1.25rem;
+}
+
+.cronometro strong {
+    color: var(--azul-escuro);
+    font-size: 2rem;
+}
+
+.botoes-cronometro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.progresso strong {
+    display: block;
+    color: var(--azul);
+    font-size: 1.8rem;
+}
+
+.barra-progresso {
+    height: 12px;
+    margin-top: 1rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #29211d;
+}
+
+.barra-progresso span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--azul), var(--verde));
+    transition: width 0.25s ease;
+}
+
+.filtros {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.filtros div {
+    min-width: 0;
+}
+
+.lista-treino {
+    padding: 1.25rem;
+}
+
+.cards-exercicios {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.card-exercicio {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--linha);
+    border-left: 6px solid var(--azul);
+    border-radius: 8px;
+    background: #202021;
+}
+
+.card-exercicio[data-objetivo="Força"] {
+    border-left-color: var(--verde);
+}
+
+.card-exercicio[data-objetivo="Resistência"],
+.card-exercicio[data-objetivo="Condicionamento"] {
+    border-left-color: var(--vinho);
+}
+
+.card-exercicio h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+}
+
+.meta-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #352a24;
+    color: #b3a295;
+    font-size: 0.88rem;
+}
+
+.prioridade {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+}
+
+.prioridade::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--azul);
+}
+
+.prioridade[data-prioridade="Alta"]::before {
+    background: var(--vinho);
+}
+
+.prioridade[data-prioridade="Leve"]::before {
+    background: var(--verde);
+}
+
+.detalhes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.detalhes span {
+    padding: 0.35rem 0.55rem;
+    border-radius: 6px;
+    background: #2b221d;
+    color: #f0d6c0;
+    font-size: 0.9rem;
+}
+
+.acoes-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.concluido {
+    opacity: 0.68;
+}
+
+.observacao-card {
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    border-radius: 6px;
+    background: #241c17;
+    color: #d7baa3;
+    font-size: 0.92rem;
+}
+
+.acoes-card {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid #352a24;
+}
+
+.acoes-card .btn {
+    min-width: 100px;
+}
+
+.concluido h3 {
+    text-decoration: line-through;
+}
+
+.vazio {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 8px;
+    background: var(--alerta);
+    color: #f0d3bb;
+}
+
+.semana {
+    padding: 1.25rem;
+}
+
+.semana h2 {
+    margin-bottom: 1rem;
+    font-size: 1.35rem;
+}
+
+.dia-card {
+    height: 100%;
+    min-height: 120px;
+    padding: 1rem;
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    background: #1f1f20;
+}
+
+.dia-card h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.dia-card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #c9b8ac;
+}
+
+.dia-card li + li {
+    margin-top: 0.35rem;
+}
+
+.historico-lista {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.historico-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    background: #202021;
+}
+
+.historico-item strong {
+    color: var(--azul-escuro);
+}
+
+.btn-success {
+    background-color: var(--verde);
+    border-color: var(--verde);
+}
+
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:active {
+    background-color: var(--verde-escuro) !important;
+    border-color: var(--verde-escuro) !important;
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.site-header .btn-outline-light {
+    color: #f0d3bb;
+    border-color: #8b6750;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.site-header .btn-outline-light:hover,
+.btn-outline-primary:focus,
+.btn-outline-secondary:focus,
+.btn-outline-success:focus,
+.site-header .btn-outline-light:focus {
+    color: #ffffff !important;
+    background-color: var(--azul) !important;
+    border-color: var(--azul) !important;
+}
+
+.btn-outline-danger {
+    color: #f5cbb0;
+    border-color: #a56a47;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:focus {
+    color: #ffffff !important;
+    background-color: var(--azul-escuro) !important;
+    border-color: var(--azul-escuro) !important;
+}
+
+.text-bg-success {
+    background-color: var(--verde) !important;
+    color: #ffffff !important;
+}
+
+.text-bg-primary {
+    background-color: var(--azul) !important;
+    color: #ffffff !important;
+}
+
+.text-bg-warning {
+    background-color: var(--vinho) !important;
+    color: #2b170c !important;
+}
+
+.alert-danger {
+    color: #f3d5c1;
+    background-color: #2a2019;
+    border-color: #744229;
+}
+
+.alert-success {
+    color: #f5ddca;
+    background-color: #2a211b;
+    border-color: #8e4d27;
+}
+
+.form-label {
+    color: #efdbcc;
+}
+
+.form-control,
+.form-select {
+    color: var(--texto);
+    background-color: #111112;
+    border-color: #3b2f28;
+}
+
+.form-control::placeholder {
+    color: #8f7c70;
+}
+
+.form-control:focus,
+.form-select:focus {
+    color: var(--texto);
+    background-color: #111112;
+    border-color: var(--azul);
+    box-shadow: 0 0 0 0.25rem rgba(184, 98, 49, 0.18);
+}
+
+.form-select option {
+    background: #111112;
+    color: var(--texto);
+}
+
+@media (max-width: 768px) {
+    .site-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .resumo {
+        flex-direction: column;
+    }
+
+    .topo {
+        align-items: flex-start;
+    }
+
+    .filtros {
+        grid-template-columns: 1fr;
+    }
+
+    .card-exercicio {
+        gap: 0.65rem;
+    }
+
+    .botoes-formulario {
+        grid-template-columns: 1fr;
+    }
+}
