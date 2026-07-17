@@ -35,6 +35,7 @@ const limparTudo = document.getElementById("limparTudo");
 const botoesModelos = document.querySelectorAll("[data-modelo]");
 const listaHistorico = document.getElementById("listaHistorico");
 const limparHistorico = document.getElementById("limparHistorico");
+const statusApi = document.getElementById("statusApi");
 
 const diasSemana = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const nomesModelos = {
@@ -154,6 +155,34 @@ function criarTextoSeguro(texto) {
 
 function obterTextoItens(quantidade) {
     return `${quantidade} ${quantidade === 1 ? "item" : "itens"}`;
+}
+
+async function verificarStatusApi() {
+    if (!statusApi) {
+        return;
+    }
+
+    statusApi.textContent = "API: verificando";
+    statusApi.className = "badge text-bg-secondary";
+
+    try {
+        const resposta = await fetch("/api/health", {
+            cache: "no-store"
+        });
+
+        if (!resposta.ok) {
+            throw new Error("Falha ao consultar a API.");
+        }
+
+        const dados = await resposta.json();
+        const apiOnline = dados.status === "ok";
+
+        statusApi.textContent = apiOnline ? "API online" : "API instavel";
+        statusApi.className = apiOnline ? "badge text-bg-success" : "badge text-bg-warning";
+    } catch (_error) {
+        statusApi.textContent = "API offline";
+        statusApi.className = "badge text-bg-danger";
+    }
 }
 
 function obterExerciciosFiltrados() {
@@ -578,3 +607,4 @@ zerarTimer.addEventListener("click", () => {
 
 atualizarTela();
 atualizarTempo();
+verificarStatusApi();

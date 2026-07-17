@@ -1,0 +1,26 @@
+{
+  "name": "iron-pump-app",
+  "version": "1.0.0",
+  "description": "Base full stack inicial do app Diario de Treino Iron Pump.",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "academia",
+    "treino",
+    "node",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
