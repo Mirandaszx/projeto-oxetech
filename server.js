@@ -1,6 +1,6 @@
-const app = require("./src/app");
-const { env } = require("./src/config/env");
+const aplicativo = require("./src/aplicacao");
+const { ambiente } = require("./src/config/ambiente");
 
-app.listen(env.port, () => {
-    console.log(`Iron Pump backend rodando em http://localhost:${env.port}`);
+aplicativo.listen(ambiente.porta, () => {
+    console.log(`Servidor Iron Pump rodando em http://localhost:${ambiente.porta}`);
 });

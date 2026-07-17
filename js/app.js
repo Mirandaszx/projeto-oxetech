@@ -166,7 +166,7 @@ async function verificarStatusApi() {
     statusApi.className = "badge text-bg-secondary";
 
     try {
-        const resposta = await fetch("/api/health", {
+        const resposta = await fetch("/api/status", {
             cache: "no-store"
         });
 

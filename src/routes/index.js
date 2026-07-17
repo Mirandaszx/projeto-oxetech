@@ -1,11 +1,13 @@
 const { Router } = require("express");
 
-const authRoutes = require("./authRoutes");
-const healthRoutes = require("./healthRoutes");
+const rotasAutenticacao = require("./autenticacaoRoutes");
+const rotasStatus = require("./statusRoutes");
 
-const router = Router();
+const roteador = Router();
 
-router.use("/health", healthRoutes);
-router.use("/auth", authRoutes);
+roteador.use("/status", rotasStatus);
+roteador.use("/health", rotasStatus);
+roteador.use("/autenticacao", rotasAutenticacao);
+roteador.use("/auth", rotasAutenticacao);
 
-module.exports = router;
+module.exports = roteador;
