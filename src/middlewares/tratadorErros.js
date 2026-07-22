@@ -1,6 +1,13 @@
 function tratarErros(erro, requisicao, resposta, _proximo) {
     const codigoStatus = erro.statusCode || 500;
-    const mensagem = erro.message || "Erro interno do servidor.";
+    const erroInterno = codigoStatus >= 500;
+    const mensagem = erroInterno
+        ? "Erro interno do servidor."
+        : erro.message || "Nao foi possivel concluir a solicitacao.";
+
+    if (erroInterno) {
+        console.error(erro);
+    }
 
     // A API responde em JSON; as rotas de pagina mantem uma resposta simples.
     if (requisicao.originalUrl.startsWith("/api")) {

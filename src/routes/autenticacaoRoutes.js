@@ -1,6 +1,7 @@
 const { Router } = require("express");
 
 const controladorAutenticacao = require("../controllers/autenticacaoController");
+const autenticarToken = require("../middlewares/autenticarToken");
 
 const roteador = Router();
 
@@ -8,5 +9,7 @@ const roteador = Router();
 roteador.post("/cadastro", controladorAutenticacao.cadastrarUsuario);
 roteador.post("/register", controladorAutenticacao.cadastrarUsuario);
 roteador.post("/login", controladorAutenticacao.entrar);
+roteador.get("/perfil", autenticarToken, controladorAutenticacao.obterPerfil);
+roteador.get("/profile", autenticarToken, controladorAutenticacao.obterPerfil);
 
 module.exports = roteador;

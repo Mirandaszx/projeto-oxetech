@@ -10,8 +10,8 @@ const aplicativo = express();
 const diretorioRaiz = path.resolve(__dirname, "..");
 
 aplicativo.use(cors());
-aplicativo.use(express.json());
-aplicativo.use(express.urlencoded({ extended: true }));
+aplicativo.use(express.json({ limit: "100kb" }));
+aplicativo.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // Mantem o front atual funcionando enquanto o backend cresce por etapas.
 aplicativo.use("/css", express.static(path.join(diretorioRaiz, "css")));
