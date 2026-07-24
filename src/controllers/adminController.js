@@ -3,13 +3,15 @@ const bcrypt = require("bcryptjs");
 
 const {
     buscarUsuarioPorEmail,
-    buscarPersonalPorCodigo,
+    buscarPersonalPorCodigoIncluindoInativos,
+    buscarPersonalPorId,
     listarUsuariosPorTipo,
     listarAlunosDoPersonal,
     listarSolicitacoesDoPersonal,
-    criarUsuario
+    criarUsuario,
+    atualizarUsuario
 } = require("../repositorios/usuariosRepositorio");
-const { validarCadastroConta } = require("../validacoes/conta");
+const { validarCadastroConta, validarEdicaoConta } = require("../validacoes/conta");
 
 async function montarPersonalPublico(personal) {
     const [alunos, solicitacoes] = await Promise.all([
@@ -22,6 +24,7 @@ async function montarPersonalPublico(personal) {
         nome: personal.nome,
         email: personal.email,
         codigoVinculo: personal.codigoVinculo,
+        ativo: personal.ativo !== false,
         totalAlunos: alunos.length,
         totalSolicitacoes: solicitacoes.length,
         criadoEm: personal.criadoEm
@@ -33,7 +36,7 @@ async function gerarCodigoVinculo() {
 
     do {
         codigoVinculo = `IP-${randomBytes(3).toString("hex").toUpperCase()}`;
-    } while (await buscarPersonalPorCodigo(codigoVinculo));
+    } while (await buscarPersonalPorCodigoIncluindoInativos(codigoVinculo));
 
     return codigoVinculo;
 }
@@ -53,6 +56,7 @@ async function obterPainel(requisicao, resposta) {
         },
         resumo: {
             totalPersonais: personais.length,
+            totalPersonaisAtivos: personais.filter((personal) => personal.ativo !== false).length,
             totalAlunos: alunos.length
         },
         personais: personaisPublicos
@@ -91,7 +95,82 @@ async function cadastrarPersonal(requisicao, resposta) {
     });
 }
 
+async function atualizarPersonal(requisicao, resposta) {
+    const personal = await buscarPersonalPorId(requisicao.params.personalId);
+
+    if (!personal) {
+        return resposta.status(404).json({ mensagem: "Personal nao encontrado." });
+    }
+
+    const mensagemValidacao = validarEdicaoConta(requisicao.body, "personal");
+
+    if (mensagemValidacao) {
+        return resposta.status(400).json({ mensagem: mensagemValidacao });
+    }
+
+    const nome = requisicao.body.nome.trim();
+    const email = requisicao.body.email.trim().toLowerCase();
+    const usuarioComEmail = await buscarUsuarioPorEmail(email);
+
+    if (usuarioComEmail && usuarioComEmail.id !== personal.id) {
+        return resposta.status(409).json({
+            mensagem: "Ja existe uma conta cadastrada com esse email."
+        });
+    }
+
+    const alteracoes = { nome, email };
+
+    if (requisicao.body.senha) {
+        alteracoes.senhaHash = await bcrypt.hash(requisicao.body.senha, 10);
+    }
+
+    const personalAtualizado = await atualizarUsuario(personal.id, alteracoes);
+
+    return resposta.json({
+        mensagem: "Dados do personal atualizados com sucesso.",
+        personal: await montarPersonalPublico(personalAtualizado)
+    });
+}
+
+async function definirStatusPersonal(personalId, ativo, resposta) {
+    const personal = await buscarPersonalPorId(personalId);
+
+    if (!personal) {
+        return resposta.status(404).json({ mensagem: "Personal nao encontrado." });
+    }
+
+    const personalAtualizado = await atualizarUsuario(personal.id, { ativo });
+
+    return resposta.json({
+        mensagem: ativo
+            ? "Personal reativado com sucesso."
+            : "Personal desativado com sucesso.",
+        personal: await montarPersonalPublico(personalAtualizado)
+    });
+}
+
+async function alterarStatusPersonal(requisicao, resposta) {
+    if (typeof requisicao.body.ativo !== "boolean") {
+        return resposta.status(400).json({
+            mensagem: "Informe se o personal deve ficar ativo ou inativo."
+        });
+    }
+
+    return definirStatusPersonal(
+        requisicao.params.personalId,
+        requisicao.body.ativo,
+        resposta
+    );
+}
+
+async function desativarPersonal(requisicao, resposta) {
+    return definirStatusPersonal(requisicao.params.personalId, false, resposta);
+}
+
 module.exports = {
     obterPainel,
-    cadastrarPersonal
+    cadastrarPersonal,
+    atualizarPersonal,
+    alterarStatusPersonal,
+    desativarPersonal
 };

@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "Base full stack inicial do app Diario de Treino Iron Pump.",
   "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "node --test tests",
     "db:check": "node src/banco/verificarConexao.js",
-    "db:migrate": "node src/banco/migrar.js"
+    "db:migrate": "node src/banco/migrar.js",
+    "db:seed": "node src/banco/semearDemonstracao.js"
   },
   "keywords": [
     "academia",

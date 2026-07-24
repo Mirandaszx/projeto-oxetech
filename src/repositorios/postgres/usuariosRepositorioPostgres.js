@@ -11,6 +11,7 @@ const consultaBaseUsuario = `
         u.tipo_usuario,
         u.objetivo_treino,
         u.codigo_vinculo,
+        u.ativo,
         u.criado_em,
         vinculo.personal_id,
         vinculo.status AS status_vinculo
@@ -42,6 +43,7 @@ function mapearUsuario(linha) {
         tipoUsuario: linha.tipo_usuario,
         objetivoTreino: linha.objetivo_treino || "",
         codigoVinculo: linha.codigo_vinculo || null,
+        ativo: linha.ativo !== false,
         personalId: linha.personal_id || null,
         statusVinculo: linha.tipo_usuario === "aluno"
             ? linha.status_vinculo || "sem_vinculo"
@@ -71,8 +73,24 @@ async function buscarPersonalPorCodigo(codigoVinculo) {
     const codigoNormalizado = String(codigoVinculo || "").trim().toUpperCase();
 
     return consultarUm(
+        "u.tipo_usuario = 'personal' AND u.codigo_vinculo = $1 AND u.ativo = TRUE",
+        [codigoNormalizado]
+    );
+}
+
+async function buscarPersonalPorCodigoIncluindoInativos(codigoVinculo) {
+    const codigoNormalizado = String(codigoVinculo || "").trim().toUpperCase();
+
+    return consultarUm(
         "u.tipo_usuario = 'personal' AND u.codigo_vinculo = $1",
         [codigoNormalizado]
+    );
+}
+
+async function buscarPersonalPorId(personalId) {
+    return consultarUm(
+        "u.id = $1 AND u.tipo_usuario = 'personal'",
+        [personalId]
     );
 }
 
@@ -257,15 +275,49 @@ async function criarUsuario(usuario) {
     return buscarUsuarioPorId(usuario.id);
 }
 
+async function atualizarUsuario(usuarioId, dadosAtualizados = {}) {
+    const colunas = {
+        nome: "nome",
+        email: "email",
+        senhaHash: "senha_hash",
+        objetivoTreino: "objetivo_treino",
+        ativo: "ativo"
+    };
+    const alteracoes = Object.entries(colunas)
+        .filter(([campo]) => dadosAtualizados[campo] !== undefined);
+
+    if (alteracoes.length === 0) {
+        return buscarUsuarioPorId(usuarioId);
+    }
+
+    const valores = [usuarioId];
+    const atribuicoes = alteracoes.map(([campo, coluna], indice) => {
+        valores.push(dadosAtualizados[campo]);
+        return `${coluna} = $${indice + 2}`;
+    });
+
+    await obterPool().query(
+        `UPDATE usuarios
+         SET ${atribuicoes.join(", ")}, atualizado_em = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        valores
+    );
+
+    return buscarUsuarioPorId(usuarioId);
+}
+
 module.exports = {
     buscarUsuarioPorEmail,
     buscarUsuarioPorId,
     buscarPersonalPorCodigo,
+    buscarPersonalPorCodigoIncluindoInativos,
+    buscarPersonalPorId,
     listarUsuariosPorTipo,
     listarAlunosDoPersonal,
     listarSolicitacoesDoPersonal,
     buscarAlunoDoPersonal,
     buscarSolicitacaoDoPersonal,
     definirVinculoAluno,
-    criarUsuario
+    criarUsuario,
+    atualizarUsuario
 };

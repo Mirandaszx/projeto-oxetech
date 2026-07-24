@@ -7,6 +7,7 @@ const {
     criarUsuario
 } = require("../repositorios/usuariosRepositorio");
 const { testarConexao } = require("./conexao");
+const { executarMigracoes } = require("./migrar");
 
 async function garantirAdministradorInicial() {
     const email = ambiente.administrador.email.trim().toLowerCase();
@@ -32,6 +33,7 @@ async function inicializarPersistencia() {
     }
 
     await testarConexao();
+    await executarMigracoes();
     await garantirAdministradorInicial();
 }
 

@@ -32,6 +32,13 @@ async function autenticarToken(requisicao, resposta, proximo) {
             });
         }
 
+        if (usuario.ativo === false) {
+            return resposta.status(403).json({
+                codigo: "CONTA_DESATIVADA",
+                mensagem: "Esta conta foi desativada. Procure o administrador."
+            });
+        }
+
         requisicao.usuario = usuario;
         return proximo();
     } catch (erro) {

@@ -10,5 +10,9 @@ roteador.use(autenticarToken, autorizarPerfis("admin"));
 
 roteador.get("/painel", controladorAdmin.obterPainel);
 roteador.post("/personais", controladorAdmin.cadastrarPersonal);
+roteador.put("/personais/:personalId", controladorAdmin.atualizarPersonal);
+roteador.patch("/personais/:personalId", controladorAdmin.atualizarPersonal);
+roteador.patch("/personais/:personalId/status", controladorAdmin.alterarStatusPersonal);
+roteador.delete("/personais/:personalId", controladorAdmin.desativarPersonal);
 
 module.exports = roteador;

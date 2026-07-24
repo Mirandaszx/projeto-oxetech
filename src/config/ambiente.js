@@ -15,6 +15,20 @@ const ambiente = {
         nome: process.env.ADMIN_NAME || "Administrador Iron Pump",
         email: process.env.ADMIN_EMAIL || "admin@ironpump.com",
         senha: process.env.ADMIN_PASSWORD || "123456"
+    },
+    demonstracao: {
+        personal: {
+            nome: process.env.DEMO_PERSONAL_NAME || "Personal Iron Pump",
+            email: process.env.DEMO_PERSONAL_EMAIL || "personal@ironpump.com",
+            senha: process.env.DEMO_PERSONAL_PASSWORD || "123456",
+            codigoVinculo: process.env.DEMO_PERSONAL_CODE || "IP-DE1234"
+        },
+        aluno: {
+            nome: process.env.DEMO_ALUNO_NAME || "Aluno Demonstracao",
+            email: process.env.DEMO_ALUNO_EMAIL || "aluno@ironpump.com",
+            senha: process.env.DEMO_ALUNO_PASSWORD || "123456",
+            objetivoTreino: process.env.DEMO_ALUNO_OBJECTIVE || "Hipertrofia"
+        }
     }
 };
 

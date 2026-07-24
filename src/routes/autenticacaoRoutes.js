@@ -11,5 +11,7 @@ roteador.post("/register", controladorAutenticacao.cadastrarUsuario);
 roteador.post("/login", controladorAutenticacao.entrar);
 roteador.get("/perfil", autenticarToken, controladorAutenticacao.obterPerfil);
 roteador.get("/profile", autenticarToken, controladorAutenticacao.obterPerfil);
+roteador.put("/perfil", autenticarToken, controladorAutenticacao.atualizarPerfil);
+roteador.patch("/perfil", autenticarToken, controladorAutenticacao.atualizarPerfil);
 
 module.exports = roteador;

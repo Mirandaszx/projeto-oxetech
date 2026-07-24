@@ -11,6 +11,7 @@ const usuarios = [
         email: ambiente.administrador.email.trim().toLowerCase(),
         senhaHash: bcrypt.hashSync(ambiente.administrador.senha, 10),
         tipoUsuario: "admin",
+        ativo: true,
         criadoEm: new Date().toISOString()
     }
 ];
@@ -28,7 +29,23 @@ function buscarPersonalPorCodigo(codigoVinculo) {
 
     return usuarios.find((usuario) => (
         usuario.tipoUsuario === "personal"
+        && usuario.ativo !== false
         && usuario.codigoVinculo === codigoNormalizado
+    )) || null;
+}
+
+function buscarPersonalPorCodigoIncluindoInativos(codigoVinculo) {
+    const codigoNormalizado = String(codigoVinculo || "").trim().toUpperCase();
+
+    return usuarios.find((usuario) => (
+        usuario.tipoUsuario === "personal"
+        && usuario.codigoVinculo === codigoNormalizado
+    )) || null;
+}
+
+function buscarPersonalPorId(personalId) {
+    return usuarios.find((usuario) => (
+        usuario.id === personalId && usuario.tipoUsuario === "personal"
     )) || null;
 }
 
@@ -84,7 +101,23 @@ function definirVinculoAluno(alunoId, personalId, statusVinculo) {
 
 // Este armazenamento e temporario para a etapa atual antes da migracao para PostgreSQL.
 function criarUsuario(usuario) {
-    usuarios.push(usuario);
+    const novoUsuario = {
+        ...usuario,
+        ativo: usuario.ativo !== false
+    };
+
+    usuarios.push(novoUsuario);
+    return novoUsuario;
+}
+
+function atualizarUsuario(usuarioId, dadosAtualizados) {
+    const usuario = buscarUsuarioPorId(usuarioId);
+
+    if (!usuario) {
+        return null;
+    }
+
+    Object.assign(usuario, dadosAtualizados);
     return usuario;
 }
 
@@ -92,11 +125,14 @@ module.exports = {
     buscarUsuarioPorEmail,
     buscarUsuarioPorId,
     buscarPersonalPorCodigo,
+    buscarPersonalPorCodigoIncluindoInativos,
+    buscarPersonalPorId,
     listarUsuariosPorTipo,
     listarAlunosDoPersonal,
     listarSolicitacoesDoPersonal,
     buscarAlunoDoPersonal,
     buscarSolicitacaoDoPersonal,
     definirVinculoAluno,
-    criarUsuario
+    criarUsuario,
+    atualizarUsuario
 };

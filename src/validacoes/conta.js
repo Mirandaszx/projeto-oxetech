@@ -48,7 +48,42 @@ function validarLogin(dados = {}) {
     return null;
 }
 
+function validarEdicaoConta(dados = {}, rotulo = "usuario") {
+    const { nome, email, senha, confirmacaoSenha } = dados;
+
+    if (typeof nome !== "string" || !nome.trim() || !email) {
+        return "Preencha nome e email.";
+    }
+
+    if (nome.trim().length < 3 || nome.trim().length > 100) {
+        return `O nome do ${rotulo} deve ter entre 3 e 100 caracteres.`;
+    }
+
+    if (!emailValido(email)) {
+        return "Informe um email valido.";
+    }
+
+    const alterandoSenha = Boolean(senha || confirmacaoSenha);
+
+    if (alterandoSenha) {
+        if (typeof senha !== "string" || typeof confirmacaoSenha !== "string") {
+            return "Informe e confirme a nova senha.";
+        }
+
+        if (senha.length < 6 || senha.length > 128) {
+            return "A senha deve ter entre 6 e 128 caracteres.";
+        }
+
+        if (senha !== confirmacaoSenha) {
+            return "A confirmacao de senha nao confere.";
+        }
+    }
+
+    return null;
+}
+
 module.exports = {
     validarCadastroConta,
+    validarEdicaoConta,
     validarLogin
 };

@@ -8,7 +8,7 @@ Um exemplo disso é a substituição de um exercício: se o personal indicar aga
 
 Existem três tipos de acesso:
 
-- **Administrador:** cadastra as contas dos personais e acompanha quantos profissionais e alunos estão na plataforma.
+- **Administrador:** cuida das contas dos personais. Ele pode cadastrar novos profissionais, corrigir seus dados e controlar quem continua com acesso à plataforma.
 - **Personal:** compartilha seu código de vínculo, aprova ou recusa solicitações e monta fichas para os alunos acompanhados.
 - **Aluno:** pode usar o diário sozinho ou solicitar acompanhamento. Ele cria suas próprias fichas, adapta fichas recebidas e registra o resultado real de cada treino.
 
@@ -17,13 +17,18 @@ O aluno não depende de um personal para usar a aplicação. Quando existe acomp
 ## Principais funcionalidades
 
 - Cadastro e login de alunos.
-- Cadastro de personais pelo administrador.
+- Edição do próprio nome, email, objetivo de treino e senha.
+- Cadastro e gerenciamento de personais pelo administrador.
+- Alteração de nome, email e senha dos personais.
+- Desativação e reativação de contas sem apagar alunos, fichas ou históricos.
 - Solicitação, aprovação, recusa e encerramento de acompanhamento.
 - CRUD completo de fichas de treino.
 - Criação de fichas pelo aluno, mesmo com acompanhamento ativo.
 - Edição pelo aluno de fichas criadas pelo personal.
 - Registro de séries, repetições e cargas realizadas.
 - Histórico dos treinos concluídos.
+- Filtros do histórico por ficha e período.
+- Pesquisa de alunos por nome, email ou objetivo no painel do personal.
 - Exclusão da ficha sem apagar os registros anteriores.
 - Autenticação JWT e controle de acesso por perfil.
 - Tratamento de respostas `401` e `403` no frontend.
@@ -75,6 +80,14 @@ DATABASE_POOL_MAX=10
 ADMIN_NAME=Administrador Iron Pump
 ADMIN_EMAIL=admin@ironpump.com
 ADMIN_PASSWORD=123456
+DEMO_PERSONAL_NAME=Personal Iron Pump
+DEMO_PERSONAL_EMAIL=personal@ironpump.com
+DEMO_PERSONAL_PASSWORD=123456
+DEMO_PERSONAL_CODE=IP-DE1234
+DEMO_ALUNO_NAME=Aluno Demonstracao
+DEMO_ALUNO_EMAIL=aluno@ironpump.com
+DEMO_ALUNO_PASSWORD=123456
+DEMO_ALUNO_OBJECTIVE=Hipertrofia
 ```
 
 O valor de `DATABASE_URL` deve usar o usuário, a senha e a porta da sua instalação do PostgreSQL. Se a senha possuir caracteres especiais, eles precisam ser codificados para uso em uma URL.
@@ -88,9 +101,17 @@ npm run db:check
 npm run db:migrate
 ```
 
-O primeiro comando confirma que a conexão está funcionando. O segundo executa as migrations pendentes e prepara todas as tabelas necessárias.
+O primeiro comando confirma que a conexão está funcionando. O segundo executa as migrations pendentes e prepara todas as tabelas necessárias. O servidor também verifica essas migrations ao iniciar, o que ajuda na primeira execução em um banco vazio durante o deploy.
 
-### 5. Inicie a aplicação
+### 5. Prepare os dados de demonstração
+
+```bash
+npm run db:seed
+```
+
+Esse comando deixa o projeto pronto para ser apresentado. Ele prepara os três perfis, cria um vínculo entre o personal e o aluno, adiciona uma ficha montada pelo personal e registra um treino concluído pelo aluno. O comando pode ser executado novamente sem duplicar essas informações.
+
+### 6. Inicie a aplicação
 
 ```bash
 npm start
@@ -98,22 +119,47 @@ npm start
 
 A aplicação estará disponível em [http://localhost:3000](http://localhost:3000).
 
-## Acesso inicial e fluxo de teste
+## Usuários de teste
 
-Ao iniciar um banco vazio, a aplicação cria automaticamente o administrador definido no `.env`. Com os valores mostrados acima, o acesso é:
+Depois de executar `npm run db:seed`, estes acessos ficam disponíveis:
 
-- **Email:** `admin@ironpump.com`
-- **Senha:** `123456`
-- **Perfil:** administrador
+| Perfil | Email | Senha |
+| --- | --- | --- |
+| Administrador | `admin@ironpump.com` | `123456` |
+| Personal | `personal@ironpump.com` | `123456` |
+| Aluno | `aluno@ironpump.com` | `123456` |
+
+O código de vínculo do personal de demonstração é `IP-DE1234`. O aluno já começa acompanhado por esse personal, com uma ficha de três exercícios e um treino no histórico. Assim, é possível entrar em qualquer perfil e entender a proposta sem precisar preencher tudo antes.
+
+Mesmo sem executar o seed, a aplicação cria automaticamente o administrador definido no `.env` ao iniciar um banco vazio.
+
+## Fluxo sugerido para avaliação
 
 Uma forma simples de conhecer todo o fluxo é:
 
-1. Entrar como administrador e cadastrar um personal.
-2. Guardar o email, a senha e o código de vínculo desse personal.
-3. Criar uma conta de aluno pela tela de cadastro.
-4. Entrar como aluno e solicitar acompanhamento usando o código recebido.
-5. Entrar como personal, aprovar o aluno e criar uma ficha para ele.
-6. Voltar ao aluno para adaptar a ficha e registrar o treino realizado.
+1. Entrar como administrador para consultar a equipe e cadastrar um novo personal.
+2. Ainda como administrador, editar os dados do personal, desativar a conta e conferir que ela não consegue entrar. Depois, reativá-la.
+3. Entrar como personal para visualizar o aluno e montar ou editar uma ficha.
+4. Pesquisar um aluno da carteira e filtrar o histórico por ficha ou período.
+5. Entrar como aluno para adaptar os exercícios e registrar séries, repetições e cargas.
+6. Abrir “Meu perfil” para alterar o objetivo ou testar uma nova senha.
+7. Excluir uma ficha que possua treino registrado e conferir que o histórico foi preservado.
+8. Criar outra conta de aluno para testar uma nova solicitação de acompanhamento.
+
+## Gerenciamento de personais
+
+O administrador é responsável por criar as contas dos personais. Depois do cadastro, o profissional recebe um código próprio, que pode ser informado pelos alunos ao solicitarem acompanhamento.
+
+Se algum dado estiver incorreto, o administrador pode alterar o nome e o email. A senha também pode ser trocada, mas é opcional durante a edição: quando os campos de nova senha ficam vazios, a senha atual é mantida.
+
+Em vez de excluir definitivamente um personal, a aplicação permite desativar sua conta. Essa escolha evita a perda acidental do trabalho já realizado. O profissional deixa de conseguir entrar, os tokens que ele já possuía são bloqueados e seu código não pode ser usado por novos alunos. Mesmo assim, os vínculos, as fichas e os históricos permanecem guardados. Se necessário, o administrador pode reativar a mesma conta mais tarde.
+
+Por trás da tela do administrador, esse fluxo usa as seguintes rotas:
+
+- `POST /api/admin/personais`: cadastra um personal.
+- `PUT /api/admin/personais/:personalId`: atualiza nome, email e, se informada, a senha.
+- `DELETE /api/admin/personais/:personalId`: desativa a conta sem excluir seus dados.
+- `PATCH /api/admin/personais/:personalId/status`: reativa a conta.
 
 ## CRUD principal
 
@@ -139,7 +185,7 @@ Quando uma ficha é excluída, seus exercícios deixam de aparecer no diário. O
 
 O PostgreSQL utiliza as seguintes tabelas:
 
-- `usuarios`: administradores, personais e alunos.
+- `usuarios`: administradores, personais e alunos, incluindo o estado ativo ou inativo de cada conta.
 - `vinculos_acompanhamento`: solicitações e vínculos entre aluno e personal.
 - `fichas_treino`: informações gerais das fichas.
 - `exercicios_ficha`: exercícios planejados em cada ficha.
@@ -156,6 +202,10 @@ Depois do login, a API devolve um token JWT válido por 12 horas. As rotas priva
 Além de verificar se o usuário está autenticado, a aplicação também confere seu perfil. Dessa forma, um aluno não consegue acessar funções do administrador e um personal só pode alterar fichas criadas por ele para alunos que estejam em sua carteira.
 
 As senhas nunca são salvas como texto puro. Antes de serem armazenadas, elas passam pelo bcrypt.
+
+Qualquer usuário autenticado pode abrir a opção **Meu perfil** para atualizar nome, email e senha. O aluno também pode mudar seu objetivo de treino. A nova senha só é aplicada quando os dois campos de senha são preenchidos corretamente.
+
+Quando um personal é desativado, novos logins e tokens emitidos anteriormente deixam de funcionar. A conta continua listada para o gerenciamento do administrador e pode ser reativada sem perder o trabalho já registrado.
 
 ## Arquitetura
 
@@ -186,6 +236,7 @@ As rotas recebem as requisições, os controllers aplicam as regras de negócio,
 - `npm test`: executa os testes automatizados.
 - `npm run db:check`: verifica a conexão com o PostgreSQL.
 - `npm run db:migrate`: executa as migrations pendentes.
+- `npm run db:seed`: prepara os usuários e a ficha de demonstração.
 
 ## Testes
 
@@ -195,7 +246,9 @@ Para executar a suíte automatizada:
 npm test
 ```
 
-Os testes cobrem autenticação, permissões, vínculos, CRUD de fichas, preservação do histórico e renderização dos painéis. O projeto também foi validado manualmente nos três perfis, tanto em desktop quanto em celular.
+Os testes percorrem o caminho principal dos três perfis: autenticação, permissões, vínculos, criação e edição de fichas, registro de treinos e preservação do histórico. Há cenários específicos para a edição do próprio perfil e para o administrador, que cadastra um personal, altera seus dados e senha, desativa a conta, confirma o bloqueio do acesso e depois a reativa.
+
+Além da suíte automatizada em memória, os fluxos de perfil e gerenciamento de personais foram conferidos com o PostgreSQL para garantir que as alterações realmente permanecem salvas no banco.
 
 ## Licença
 

@@ -7,10 +7,12 @@ const {
     buscarUsuarioPorEmail,
     buscarUsuarioPorId,
     buscarPersonalPorCodigo,
-    criarUsuario
+    criarUsuario,
+    atualizarUsuario
 } = require("../repositorios/usuariosRepositorio");
 const {
     validarCadastroConta,
+    validarEdicaoConta,
     validarLogin
 } = require("../validacoes/conta");
 
@@ -20,6 +22,7 @@ function montarUsuarioPublico(usuario) {
         nome: usuario.nome,
         email: usuario.email,
         tipoUsuario: usuario.tipoUsuario,
+        ativo: usuario.ativo !== false,
         objetivoTreino: usuario.objetivoTreino || "",
         personalId: usuario.personalId || null,
         statusVinculo: usuario.statusVinculo || null,
@@ -117,6 +120,13 @@ async function entrar(requisicao, resposta) {
         });
     }
 
+    if (usuario.ativo === false) {
+        return resposta.status(403).json({
+            codigo: "CONTA_DESATIVADA",
+            mensagem: "Esta conta foi desativada. Procure o administrador."
+        });
+    }
+
     return resposta.json({
         mensagem: "Login realizado com sucesso.",
         token: criarToken(usuario),
@@ -132,8 +142,52 @@ async function obterPerfil(requisicao, resposta) {
     });
 }
 
+async function atualizarPerfil(requisicao, resposta) {
+    const mensagemValidacao = validarEdicaoConta(requisicao.body);
+
+    if (mensagemValidacao) {
+        return resposta.status(400).json({ mensagem: mensagemValidacao });
+    }
+
+    const nome = requisicao.body.nome.trim();
+    const email = requisicao.body.email.trim().toLowerCase();
+    const usuarioComEmail = await buscarUsuarioPorEmail(email);
+
+    if (usuarioComEmail && usuarioComEmail.id !== requisicao.usuario.id) {
+        return resposta.status(409).json({
+            mensagem: "Ja existe uma conta cadastrada com esse email."
+        });
+    }
+
+    const alteracoes = { nome, email };
+
+    if (requisicao.usuario.tipoUsuario === "aluno") {
+        const objetivoTreino = String(requisicao.body.objetivoTreino || "").trim();
+
+        if (objetivoTreino.length > 120) {
+            return resposta.status(400).json({
+                mensagem: "O objetivo de treino deve ter no maximo 120 caracteres."
+            });
+        }
+
+        alteracoes.objetivoTreino = objetivoTreino;
+    }
+
+    if (requisicao.body.senha) {
+        alteracoes.senhaHash = await bcrypt.hash(requisicao.body.senha, 10);
+    }
+
+    const usuario = await atualizarUsuario(requisicao.usuario.id, alteracoes);
+
+    return resposta.json({
+        mensagem: "Perfil atualizado com sucesso.",
+        usuario: montarUsuarioPublico(usuario)
+    });
+}
+
 module.exports = {
     cadastrarUsuario,
     entrar,
-    obterPerfil
+    obterPerfil,
+    atualizarPerfil
 };

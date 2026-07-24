@@ -655,6 +655,214 @@ test("aluno sem acompanhamento cria e edita a propria ficha", async () => {
     });
 });
 
+test("usuario atualiza o proprio perfil e pode trocar a senha", async () => {
+    const cadastro = await requisicao("/autenticacao/cadastro", {
+        metodo: "POST",
+        corpo: {
+            nome: "Aluno Perfil",
+            email: "perfil@teste.com",
+            senha: "123456",
+            confirmacaoSenha: "123456",
+            objetivoTreino: "Condicionamento"
+        }
+    });
+
+    const atualizacaoSemSenha = await requisicao("/autenticacao/perfil", {
+        metodo: "PUT",
+        token: cadastro.dados.token,
+        corpo: {
+            nome: "Aluno Perfil Atualizado",
+            email: "perfil.atualizado@teste.com",
+            objetivoTreino: "Mobilidade",
+            senha: "",
+            confirmacaoSenha: ""
+        }
+    });
+    const loginComSenhaMantida = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "perfil.atualizado@teste.com", senha: "123456" }
+    });
+
+    assert.equal(atualizacaoSemSenha.resposta.status, 200);
+    assert.equal(atualizacaoSemSenha.dados.usuario.nome, "Aluno Perfil Atualizado");
+    assert.equal(atualizacaoSemSenha.dados.usuario.objetivoTreino, "Mobilidade");
+    assert.equal(loginComSenhaMantida.resposta.status, 200);
+
+    const atualizacaoComSenha = await requisicao("/autenticacao/perfil", {
+        metodo: "PUT",
+        token: cadastro.dados.token,
+        corpo: {
+            nome: "Aluno Perfil Atualizado",
+            email: "perfil.atualizado@teste.com",
+            objetivoTreino: "Mobilidade e forca",
+            senha: "654321",
+            confirmacaoSenha: "654321"
+        }
+    });
+    const perfilComTokenAnterior = await requisicao("/autenticacao/perfil", {
+        token: cadastro.dados.token
+    });
+    const loginSenhaAntiga = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "perfil.atualizado@teste.com", senha: "123456" }
+    });
+    const loginSenhaNova = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "perfil.atualizado@teste.com", senha: "654321" }
+    });
+
+    assert.equal(atualizacaoComSenha.resposta.status, 200);
+    assert.equal(perfilComTokenAnterior.resposta.status, 200);
+    assert.equal(perfilComTokenAnterior.dados.usuario.objetivoTreino, "Mobilidade e forca");
+    assert.equal(loginSenhaAntiga.resposta.status, 401);
+    assert.equal(loginSenhaNova.resposta.status, 200);
+
+    const emailDuplicado = await requisicao("/autenticacao/perfil", {
+        metodo: "PUT",
+        token: loginSenhaNova.dados.token,
+        corpo: {
+            nome: "Aluno Perfil Atualizado",
+            email: ambiente.administrador.email,
+            objetivoTreino: "Mobilidade",
+            senha: "",
+            confirmacaoSenha: ""
+        }
+    });
+    const objetivoMuitoLongo = await requisicao("/autenticacao/perfil", {
+        metodo: "PUT",
+        token: loginSenhaNova.dados.token,
+        corpo: {
+            nome: "Aluno Perfil Atualizado",
+            email: "perfil.atualizado@teste.com",
+            objetivoTreino: "a".repeat(121),
+            senha: "",
+            confirmacaoSenha: ""
+        }
+    });
+
+    assert.equal(emailDuplicado.resposta.status, 409);
+    assert.equal(objetivoMuitoLongo.resposta.status, 400);
+});
+
+test("administrador edita, desativa e reativa um personal", async () => {
+    const loginAdmin = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: {
+            email: ambiente.administrador.email,
+            senha: ambiente.administrador.senha
+        }
+    });
+    const cadastro = await requisicao("/admin/personais", {
+        metodo: "POST",
+        token: loginAdmin.dados.token,
+        corpo: {
+            nome: "Personal Temporario",
+            email: "temporario@teste.com",
+            senha: "123456",
+            confirmacaoSenha: "123456"
+        }
+    });
+
+    assert.equal(cadastro.resposta.status, 201);
+    assert.equal(cadastro.dados.personal.ativo, true);
+    const personalId = cadastro.dados.personal.id;
+
+    const edicaoInvalida = await requisicao(`/admin/personais/${personalId}`, {
+        metodo: "PUT",
+        token: loginAdmin.dados.token,
+        corpo: {
+            nome: "Personal Atualizado",
+            email: "atualizado@teste.com",
+            senha: "654321",
+            confirmacaoSenha: "diferente"
+        }
+    });
+
+    assert.equal(edicaoInvalida.resposta.status, 400);
+
+    const edicao = await requisicao(`/admin/personais/${personalId}`, {
+        metodo: "PUT",
+        token: loginAdmin.dados.token,
+        corpo: {
+            nome: "Personal Atualizado",
+            email: "atualizado@teste.com",
+            senha: "654321",
+            confirmacaoSenha: "654321"
+        }
+    });
+
+    assert.equal(edicao.resposta.status, 200);
+    assert.equal(edicao.dados.personal.nome, "Personal Atualizado");
+    assert.equal(edicao.dados.personal.email, "atualizado@teste.com");
+
+    const loginEmailAntigo = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "temporario@teste.com", senha: "123456" }
+    });
+    const loginAtualizado = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "atualizado@teste.com", senha: "654321" }
+    });
+
+    assert.equal(loginEmailAntigo.resposta.status, 401);
+    assert.equal(loginAtualizado.resposta.status, 200);
+
+    const acessoAdminPeloPersonal = await requisicao(`/admin/personais/${personalId}`, {
+        metodo: "DELETE",
+        token: loginAtualizado.dados.token
+    });
+
+    assert.equal(acessoAdminPeloPersonal.resposta.status, 403);
+
+    const desativacao = await requisicao(`/admin/personais/${personalId}`, {
+        metodo: "DELETE",
+        token: loginAdmin.dados.token
+    });
+
+    assert.equal(desativacao.resposta.status, 200);
+    assert.equal(desativacao.dados.personal.ativo, false);
+
+    const loginDesativado = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "atualizado@teste.com", senha: "654321" }
+    });
+    const tokenAnteriorDesativado = await requisicao("/personal/painel", {
+        token: loginAtualizado.dados.token
+    });
+    const painelComInativo = await requisicao("/admin/painel", {
+        token: loginAdmin.dados.token
+    });
+    const personalInativo = painelComInativo.dados.personais.find(
+        (personal) => personal.id === personalId
+    );
+
+    assert.equal(loginDesativado.resposta.status, 403);
+    assert.equal(loginDesativado.dados.codigo, "CONTA_DESATIVADA");
+    assert.equal(tokenAnteriorDesativado.resposta.status, 403);
+    assert.equal(tokenAnteriorDesativado.dados.codigo, "CONTA_DESATIVADA");
+    assert.equal(personalInativo.ativo, false);
+
+    const statusInvalido = await requisicao(`/admin/personais/${personalId}/status`, {
+        metodo: "PATCH",
+        token: loginAdmin.dados.token,
+        corpo: { ativo: "sim" }
+    });
+    const reativacao = await requisicao(`/admin/personais/${personalId}/status`, {
+        metodo: "PATCH",
+        token: loginAdmin.dados.token,
+        corpo: { ativo: true }
+    });
+    const loginReativado = await requisicao("/autenticacao/login", {
+        metodo: "POST",
+        corpo: { email: "atualizado@teste.com", senha: "654321" }
+    });
+
+    assert.equal(statusInvalido.resposta.status, 400);
+    assert.equal(reativacao.resposta.status, 200);
+    assert.equal(reativacao.dados.personal.ativo, true);
+    assert.equal(loginReativado.resposta.status, 200);
+});
+
 test("serve a interface com os paineis dos tres perfis", async () => {
     const pagina = await fetch(enderecoApi.replace("/api", "/"));
     const html = await pagina.text();
@@ -674,6 +882,11 @@ test("serve a interface com os paineis dos tres perfis", async () => {
     assert.match(javascript, /renderEvolucaoFicha/);
     assert.match(javascript, /data-registro-campo/);
     assert.match(javascript, /editar-ficha-personal/);
+    assert.match(javascript, /editar-personal/);
+    assert.match(javascript, /alterar-status-personal/);
+    assert.match(javascript, /data-form-submit="perfil"/);
+    assert.match(javascript, /data-form-submit="pesquisa-alunos"/);
+    assert.match(javascript, /data-controle="filtro-historico"/);
     assert.match(javascript, /remover-ficha-personal/);
     assert.match(javascript, /remover-ficha-aluno/);
     assert.match(javascript, /Historico de fichas excluidas/);
@@ -686,13 +899,18 @@ test("serve a interface com os paineis dos tres perfis", async () => {
 
 test("documenta a instalacao e o CRUD completo no README", () => {
     const readme = fs.readFileSync(path.resolve(__dirname, "../README.md"), "utf8");
+    const pacote = require("../package.json");
 
     assert.match(readme, /PERSISTENCIA=postgres/);
     assert.match(readme, /DATABASE_URL=/);
     assert.match(readme, /npm run db:migrate/);
+    assert.match(readme, /npm run db:seed/);
     assert.match(readme, /DELETE \/api\/aluno\/fichas/);
     assert.match(readme, /admin@ironpump\.com/);
+    assert.match(readme, /personal@ironpump\.com/);
+    assert.match(readme, /aluno@ironpump\.com/);
     assert.match(readme, /Arquitetura/);
+    assert.equal(pacote.scripts["db:seed"], "node src/banco/semearDemonstracao.js");
 });
 
 test("mantem preparado o contrato da persistencia PostgreSQL", () => {
@@ -704,6 +922,10 @@ test("mantem preparado o contrato da persistencia PostgreSQL", () => {
         path.resolve(__dirname, "../database/migrations/002_exclusao_fisica_fichas.sql"),
         "utf8"
     );
+    const migrationStatusUsuarios = fs.readFileSync(
+        path.resolve(__dirname, "../database/migrations/003_status_usuarios.sql"),
+        "utf8"
+    );
     const repositorioUsuarios = require(
         "../src/repositorios/postgres/usuariosRepositorioPostgres"
     );
@@ -713,6 +935,11 @@ test("mantem preparado o contrato da persistencia PostgreSQL", () => {
     const repositorioRegistros = require(
         "../src/repositorios/postgres/registrosTreinoRepositorioPostgres"
     );
+    const { semearDemonstracao } = require("../src/banco/semearDemonstracao");
+    const inicializador = fs.readFileSync(
+        path.resolve(__dirname, "../src/banco/inicializarPersistencia.js"),
+        "utf8"
+    );
 
     assert.match(migration, /CREATE TABLE IF NOT EXISTS usuarios/);
     assert.match(migration, /CREATE TABLE IF NOT EXISTS vinculos_acompanhamento/);
@@ -721,13 +948,46 @@ test("mantem preparado o contrato da persistencia PostgreSQL", () => {
     assert.match(migration, /vinculo_atual_unico_por_aluno/);
     assert.match(migrationExclusao, /ON DELETE SET NULL/);
     assert.match(migrationExclusao, /DELETE FROM fichas_treino/);
+    assert.match(migrationStatusUsuarios, /ativo BOOLEAN NOT NULL DEFAULT TRUE/);
+    assert.match(inicializador, /executarMigracoes/);
     assert.equal(typeof repositorioUsuarios.criarUsuario, "function");
+    assert.equal(typeof repositorioUsuarios.atualizarUsuario, "function");
     assert.equal(typeof repositorioFichas.atualizarFichaTreino, "function");
     assert.equal(typeof repositorioFichas.removerFichaTreino, "function");
     assert.equal(typeof repositorioRegistros.criarRegistroTreino, "function");
+    assert.equal(typeof semearDemonstracao, "function");
 });
 
 test("renderiza os controles de ficha e acompanhamento nas telas privadas", async () => {
+    const usuarioAdmin = {
+        id: "admin-1",
+        nome: "Administrador",
+        email: "admin@ironpump.com",
+        tipoUsuario: "admin"
+    };
+    const htmlAdmin = await renderizarPerfilNoVm(usuarioAdmin, {
+        "/api/autenticacao/perfil": { usuario: usuarioAdmin },
+        "/api/admin/painel": {
+            administrador: usuarioAdmin,
+            resumo: { totalPersonais: 1, totalPersonaisAtivos: 1, totalAlunos: 1 },
+            personais: [{
+                id: "personal-1",
+                nome: "Carlos Personal",
+                email: "carlos@teste.com",
+                codigoVinculo: "IP-ABC123",
+                ativo: true,
+                totalAlunos: 1,
+                totalSolicitacoes: 0,
+                criadoEm: "2026-07-20T12:00:00.000Z"
+            }]
+        }
+    });
+
+    assert.match(htmlAdmin, /data-acao="editar-personal"/);
+    assert.match(htmlAdmin, /data-acao="alterar-status-personal"/);
+    assert.match(htmlAdmin, /data-acao="abrir-perfil"/);
+    assert.match(htmlAdmin, />\s*Desativar\s*</);
+
     const exercicio = {
         id: "exercicio-1",
         nome: "Supino",
@@ -795,6 +1055,8 @@ test("renderiza os controles de ficha e acompanhamento nas telas privadas", asyn
 
     assert.match(htmlPersonal, /data-acao="editar-ficha-personal"/);
     assert.match(htmlPersonal, /data-acao="remover-ficha-personal"/);
+    assert.match(htmlPersonal, /data-form-submit="pesquisa-alunos"/);
+    assert.match(htmlPersonal, /data-controle="filtro-historico"/);
     assert.match(htmlPersonal, /Historico de fichas excluidas/);
     assert.doesNotMatch(htmlPersonal, /Arquivada/);
 
@@ -825,6 +1087,7 @@ test("renderiza os controles de ficha e acompanhamento nas telas privadas", asyn
     assert.match(htmlAluno, /data-acao="editar-ficha-aluno"/);
     assert.match(htmlAluno, /data-acao="registrar-ficha-aluno"/);
     assert.match(htmlAluno, /data-acao="remover-ficha-aluno"/);
+    assert.match(htmlAluno, /data-controle="filtro-historico"/);
     assert.match(htmlAluno, /Historico de fichas excluidas/);
 });
 

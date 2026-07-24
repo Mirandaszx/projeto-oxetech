@@ -19,6 +19,7 @@ const estado = {
     carregandoPainel: false,
     processando: "",
     abaAutenticacao: "login",
+    perfilAberto: false,
     notificacao: null,
     formularios: {
         cadastro: {
@@ -38,6 +39,16 @@ const estado = {
             email: "",
             senha: "",
             confirmacaoSenha: ""
+        },
+        perfil: {
+            nome: "",
+            email: "",
+            objetivoTreino: "",
+            senha: "",
+            confirmacaoSenha: ""
+        },
+        pesquisaAlunos: {
+            termo: ""
         },
         vinculo: {
             codigoPersonal: ""
@@ -60,12 +71,19 @@ const estado = {
         }
     },
     admin: {
-        painel: null
+        painel: null,
+        personalEditandoId: ""
     },
     personal: {
         painel: null,
         detalheAluno: null,
         alunoSelecionadoId: "",
+        buscaAluno: "",
+        filtrosHistorico: {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        },
         fichaEditandoId: "",
         exercicios: [criarExercicioVazio()]
     },
@@ -73,6 +91,11 @@ const estado = {
         painel: null,
         fichas: [],
         registros: [],
+        filtrosHistorico: {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        },
         fichaSelecionadaId: "",
         exerciciosFicha: [criarExercicioVazio()],
         fichaRegistroId: "",
@@ -136,6 +159,22 @@ function escaparHtml(texto) {
 
 function pluralizar(quantidade, singular, plural) {
     return `${quantidade} ${quantidade === 1 ? singular : plural}`;
+}
+
+function normalizarTexto(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+function filtrarRegistrosHistorico(registros, filtros) {
+    return registros.filter((registro) => (
+        (!filtros.fichaId || registro.fichaId === filtros.fichaId)
+        && (!filtros.dataInicio || registro.dataTreino >= filtros.dataInicio)
+        && (!filtros.dataFim || registro.dataTreino <= filtros.dataFim)
+    ));
 }
 
 function nomeDoPerfil(tipoUsuario) {
@@ -216,6 +255,16 @@ function redefinirFormulario(nomeFormulario) {
             senha: "",
             confirmacaoSenha: ""
         },
+        perfil: {
+            nome: "",
+            email: "",
+            objetivoTreino: "",
+            senha: "",
+            confirmacaoSenha: ""
+        },
+        pesquisaAlunos: {
+            termo: ""
+        },
         vinculo: {
             codigoPersonal: ""
         },
@@ -248,14 +297,28 @@ function redefinirFormulario(nomeFormulario) {
         estado.aluno.fichaSelecionadaId = "";
         estado.aluno.exerciciosFicha = [criarExercicioVazio()];
     }
+
+    if (nomeFormulario === "novoPersonal") {
+        estado.admin.personalEditandoId = "";
+    }
 }
 
 function limparEstadoPrivado() {
-    estado.admin.painel = null;
+    estado.perfilAberto = false;
+    estado.admin = {
+        painel: null,
+        personalEditandoId: ""
+    };
     estado.personal = {
         painel: null,
         detalheAluno: null,
         alunoSelecionadoId: "",
+        buscaAluno: "",
+        filtrosHistorico: {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        },
         fichaEditandoId: "",
         exercicios: [criarExercicioVazio()]
     };
@@ -263,12 +326,19 @@ function limparEstadoPrivado() {
         painel: null,
         fichas: [],
         registros: [],
+        filtrosHistorico: {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        },
         fichaSelecionadaId: "",
         exerciciosFicha: [criarExercicioVazio()],
         fichaRegistroId: "",
         exerciciosRegistro: []
     };
     redefinirFormulario("novoPersonal");
+    redefinirFormulario("perfil");
+    redefinirFormulario("pesquisaAlunos");
     redefinirFormulario("vinculo");
     redefinirFormulario("novaFicha");
     redefinirFormulario("fichaAluno");
@@ -311,11 +381,17 @@ async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
         const mensagemApi = typeof payload === "object" ? payload.mensagem : "";
         let mensagem = mensagemApi || "Nao foi possivel concluir a solicitacao.";
 
-        if (resposta.status === 401 && estado.token) {
+        const contaDesativada = resposta.status === 403
+            && typeof payload === "object"
+            && payload.codigo === "CONTA_DESATIVADA";
+
+        if ((resposta.status === 401 || contaDesativada) && estado.token) {
             limparSessao();
             limparEstadoPrivado();
             estado.abaAutenticacao = "login";
-            mensagem = "Sua sessao expirou. Entre novamente para continuar.";
+            mensagem = contaDesativada
+                ? mensagem
+                : "Sua sessao expirou. Entre novamente para continuar.";
             renderizar();
         } else if (resposta.status === 403 && !mensagemApi) {
             mensagem = "Seu perfil nao tem permissao para realizar esta acao.";
@@ -501,6 +577,24 @@ async function abrirSessao(token, usuario, mensagem) {
     mostrarNotificacao(mensagem);
 }
 
+function abrirEdicaoPerfil() {
+    estado.formularios.perfil = {
+        nome: estado.usuario.nome || "",
+        email: estado.usuario.email || "",
+        objetivoTreino: estado.usuario.objetivoTreino || "",
+        senha: "",
+        confirmacaoSenha: ""
+    };
+    estado.perfilAberto = true;
+    renderizar();
+}
+
+function fecharEdicaoPerfil() {
+    estado.perfilAberto = false;
+    redefinirFormulario("perfil");
+    renderizar();
+}
+
 function encerrarSessao() {
     limparSessao();
     limparEstadoPrivado();
@@ -548,16 +642,79 @@ async function enviarLogin() {
     });
 }
 
+async function enviarPerfil() {
+    await executarEnvio("perfil", async () => {
+        const dados = await requisicaoApi("/api/autenticacao/perfil", {
+            metodo: "PUT",
+            corpo: estado.formularios.perfil
+        });
+
+        salvarSessao(estado.token, dados.usuario);
+        estado.perfilAberto = false;
+        redefinirFormulario("perfil");
+        await carregarPainelDoUsuario();
+        mostrarNotificacao(dados.mensagem);
+    });
+}
+
+async function enviarPesquisaAlunos() {
+    estado.personal.buscaAluno = estado.formularios.pesquisaAlunos.termo.trim();
+    renderizar();
+}
+
 async function enviarNovoPersonal() {
     await executarEnvio("novo-personal", async () => {
-        const dados = await requisicaoApi("/api/admin/personais", {
-            metodo: "POST",
-            corpo: estado.formularios.novoPersonal
-        });
+        const personalEditandoId = estado.admin.personalEditandoId;
+        const dados = await requisicaoApi(
+            personalEditandoId
+                ? `/api/admin/personais/${personalEditandoId}`
+                : "/api/admin/personais",
+            {
+                metodo: personalEditandoId ? "PUT" : "POST",
+                corpo: estado.formularios.novoPersonal
+            }
+        );
 
         redefinirFormulario("novoPersonal");
         await carregarPainelAdmin();
-        mostrarNotificacao(`${dados.mensagem} Codigo: ${dados.personal.codigoVinculo}`);
+        mostrarNotificacao(personalEditandoId
+            ? dados.mensagem
+            : `${dados.mensagem} Codigo: ${dados.personal.codigoVinculo}`);
+    });
+}
+
+function prepararEdicaoPersonal(personalId) {
+    const personal = estado.admin.painel?.personais?.find((item) => item.id === personalId);
+
+    if (!personal) {
+        mostrarNotificacao("Personal nao encontrado no painel.", "erro");
+        return;
+    }
+
+    estado.admin.personalEditandoId = personal.id;
+    estado.formularios.novoPersonal = {
+        nome: personal.nome,
+        email: personal.email,
+        senha: "",
+        confirmacaoSenha: ""
+    };
+}
+
+async function alterarStatusPersonal(personalId, ativo) {
+    await executarEnvio(`status-personal-${personalId}`, async () => {
+        const dados = await requisicaoApi(
+            `/api/admin/personais/${personalId}${ativo ? "/status" : ""}`,
+            ativo
+                ? { metodo: "PATCH", corpo: { ativo: true } }
+                : { metodo: "DELETE" }
+        );
+
+        if (estado.admin.personalEditandoId === personalId) {
+            redefinirFormulario("novoPersonal");
+        }
+
+        await carregarPainelAdmin();
+        mostrarNotificacao(dados.mensagem, ativo ? "sucesso" : "info");
     });
 }
 
@@ -761,6 +918,11 @@ async function enviarRegistroTreino() {
 async function selecionarAluno(alunoId) {
     if (alunoId !== estado.personal.alunoSelecionadoId) {
         redefinirFormulario("novaFicha");
+        estado.personal.filtrosHistorico = {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        };
     }
 
     estado.carregandoPainel = true;
@@ -790,11 +952,43 @@ async function lidarClique(evento) {
         renderizar();
     } else if (acao === "logout") {
         encerrarSessao();
+    } else if (acao === "abrir-perfil") {
+        abrirEdicaoPerfil();
+    } else if (acao === "fechar-perfil") {
+        fecharEdicaoPerfil();
+    } else if (acao === "limpar-pesquisa-alunos") {
+        estado.personal.buscaAluno = "";
+        redefinirFormulario("pesquisaAlunos");
+        renderizar();
+    } else if (acao === "limpar-filtros-historico") {
+        const escopo = botao.dataset.escopo === "personal" ? "personal" : "aluno";
+        estado[escopo].filtrosHistorico = {
+            fichaId: "",
+            dataInicio: "",
+            dataFim: ""
+        };
+        renderizar();
     } else if (acao === "recarregar") {
         try {
             await carregarPainelDoUsuario();
         } catch (erro) {
             mostrarNotificacao(erro.message, "erro");
+        }
+    } else if (acao === "editar-personal") {
+        prepararEdicaoPersonal(botao.dataset.personalId || "");
+        renderizar();
+    } else if (acao === "cancelar-edicao-personal") {
+        redefinirFormulario("novoPersonal");
+        renderizar();
+    } else if (acao === "alterar-status-personal") {
+        const personalId = botao.dataset.personalId || "";
+        const ativar = botao.dataset.ativo === "true";
+        const acaoStatus = ativar ? "reativar" : "desativar";
+        const confirmou = typeof globalThis.confirm !== "function"
+            || globalThis.confirm(`Deseja ${acaoStatus} este personal?`);
+
+        if (confirmou) {
+            await alterarStatusPersonal(personalId, ativar);
         }
     } else if (acao === "selecionar-aluno") {
         await selecionarAluno(botao.dataset.alunoId || "");
@@ -869,6 +1063,8 @@ async function lidarEnvio(evento) {
     const acoes = {
         cadastro: enviarCadastro,
         login: enviarLogin,
+        perfil: enviarPerfil,
+        "pesquisa-alunos": enviarPesquisaAlunos,
         "novo-personal": enviarNovoPersonal,
         vinculo: enviarSolicitacaoVinculo,
         "nova-ficha": enviarNovaFicha,
@@ -885,6 +1081,15 @@ async function lidarCampo(evento) {
     if (campoFormulario) {
         const nomeFormulario = campoFormulario.dataset.formulario;
         estado.formularios[nomeFormulario][campoFormulario.name] = campoFormulario.value;
+        return;
+    }
+
+    if (evento.target.matches("[data-controle='filtro-historico']")) {
+        const escopo = evento.target.dataset.escopo === "personal" ? "personal" : "aluno";
+        const campo = evento.target.dataset.campo;
+
+        estado[escopo].filtrosHistorico[campo] = evento.target.value;
+        renderizar();
         return;
     }
 
@@ -926,6 +1131,7 @@ function renderizar() {
             ${renderCabecalho()}
             ${estado.carregandoInicial ? renderCarregandoInicial() : estado.usuario ? renderAreaPrivada() : renderAreaPublica()}
         </main>
+        ${estado.usuario && estado.perfilAberto ? renderFormularioPerfil() : ""}
     `;
 }
 
@@ -976,7 +1182,60 @@ function renderResumoUsuarioCabecalho() {
                 <p class="text-sm font-semibold text-white">${escaparHtml(estado.usuario.nome)}</p>
                 <p class="text-xs text-stone-400">${escaparHtml(nomeDoPerfil(estado.usuario.tipoUsuario))}</p>
             </div>
+            <button type="button" data-acao="abrir-perfil" class="${classes.botaoSecundario} px-4 py-2">Meu perfil</button>
             <button type="button" data-acao="logout" class="${classes.botaoSecundario} px-4 py-2">Sair</button>
+        </div>
+    `;
+}
+
+function renderFormularioPerfil() {
+    const formulario = estado.formularios.perfil;
+    const aluno = estado.usuario.tipoUsuario === "aluno";
+
+    return `
+        <div class="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
+            <section class="soft-rise ${classes.painel} my-auto w-full max-w-2xl">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="${classes.badge} w-fit">Minha conta</p>
+                        <h2 class="mt-4 font-display text-3xl font-semibold text-white">Editar perfil</h2>
+                        <p class="mt-2 text-sm text-stone-400">Atualize seus dados ou deixe a senha vazia para manter a atual.</p>
+                    </div>
+                    <button type="button" data-acao="fechar-perfil" class="${classes.botaoSecundario} px-4 py-2">Fechar</button>
+                </div>
+
+                <form data-form-submit="perfil" class="mt-6 space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="mb-2 block text-sm font-medium text-stone-300">Nome</span>
+                            <input data-formulario="perfil" name="nome" type="text" autocomplete="name" class="${classes.campo}" value="${escaparHtml(formulario.nome)}">
+                        </label>
+                        <label class="block">
+                            <span class="mb-2 block text-sm font-medium text-stone-300">Email</span>
+                            <input data-formulario="perfil" name="email" type="email" autocomplete="email" class="${classes.campo}" value="${escaparHtml(formulario.email)}">
+                        </label>
+                    </div>
+                    ${aluno ? `
+                        <label class="block">
+                            <span class="mb-2 block text-sm font-medium text-stone-300">Objetivo de treino</span>
+                            <input data-formulario="perfil" name="objetivoTreino" type="text" maxlength="120" class="${classes.campo}" placeholder="Ex.: Hipertrofia ou condicionamento" value="${escaparHtml(formulario.objetivoTreino)}">
+                        </label>
+                    ` : ""}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="mb-2 block text-sm font-medium text-stone-300">Nova senha</span>
+                            <input data-formulario="perfil" name="senha" type="password" autocomplete="new-password" class="${classes.campo}" placeholder="Opcional">
+                        </label>
+                        <label class="block">
+                            <span class="mb-2 block text-sm font-medium text-stone-300">Confirmar nova senha</span>
+                            <input data-formulario="perfil" name="confirmacaoSenha" type="password" autocomplete="new-password" class="${classes.campo}" placeholder="Repita a nova senha">
+                        </label>
+                    </div>
+                    <button type="submit" class="${classes.botaoPrimario} w-full">
+                        ${estado.processando === "perfil" ? "Salvando..." : "Salvar perfil"}
+                    </button>
+                </form>
+            </section>
         </div>
     `;
 }
@@ -1120,7 +1379,7 @@ function renderPainelAdmin() {
                     <button type="button" data-acao="recarregar" class="${classes.botaoSecundario}">Atualizar painel</button>
                 </div>
                 <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                    ${renderMetrica("Personais", String(painel?.resumo.totalPersonais || 0), "Contas criadas pelo administrador")}
+                    ${renderMetrica("Personais ativos", String(painel?.resumo.totalPersonaisAtivos || 0), `${pluralizar(painel?.resumo.totalPersonais || 0, "conta cadastrada", "contas cadastradas")}`)}
                     ${renderMetrica("Alunos", String(painel?.resumo.totalAlunos || 0), "Alunos cadastrados na plataforma")}
                 </div>
             </div>
@@ -1135,11 +1394,13 @@ function renderPainelAdmin() {
 
 function renderFormularioNovoPersonal() {
     const formulario = estado.formularios.novoPersonal;
+    const editando = Boolean(estado.admin.personalEditandoId);
 
     return `
         <section class="soft-rise ${classes.painel}">
-            <p class="${classes.badge} w-fit">Novo personal</p>
-            <h3 class="mt-4 font-display text-2xl font-semibold text-white">Criar conta profissional</h3>
+            <p class="${classes.badge} w-fit">${editando ? "Editar personal" : "Novo personal"}</p>
+            <h3 class="mt-4 font-display text-2xl font-semibold text-white">${editando ? "Atualizar conta profissional" : "Criar conta profissional"}</h3>
+            ${editando ? `<p class="mt-2 text-sm text-stone-400">Deixe os campos de senha vazios para manter a senha atual.</p>` : ""}
             <form data-form-submit="novo-personal" class="mt-6 space-y-4">
                 <label class="block">
                     <span class="mb-2 block text-sm font-medium text-stone-300">Nome completo</span>
@@ -1151,17 +1412,20 @@ function renderFormularioNovoPersonal() {
                 </label>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="block">
-                        <span class="mb-2 block text-sm font-medium text-stone-300">Senha inicial</span>
-                        <input data-formulario="novoPersonal" name="senha" type="password" class="${classes.campo}" placeholder="Minimo 6 caracteres" value="${escaparHtml(formulario.senha)}">
+                        <span class="mb-2 block text-sm font-medium text-stone-300">${editando ? "Nova senha" : "Senha inicial"}</span>
+                        <input data-formulario="novoPersonal" name="senha" type="password" class="${classes.campo}" placeholder="${editando ? "Opcional" : "Minimo 6 caracteres"}" value="${escaparHtml(formulario.senha)}">
                     </label>
                     <label class="block">
                         <span class="mb-2 block text-sm font-medium text-stone-300">Confirmacao</span>
                         <input data-formulario="novoPersonal" name="confirmacaoSenha" type="password" class="${classes.campo}" placeholder="Repita a senha" value="${escaparHtml(formulario.confirmacaoSenha)}">
                     </label>
                 </div>
-                <button type="submit" class="${classes.botaoPrimario} w-full">
-                    ${estado.processando === "novo-personal" ? "Cadastrando..." : "Cadastrar personal"}
-                </button>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                    <button type="submit" class="${classes.botaoPrimario} flex-1">
+                        ${estado.processando === "novo-personal" ? "Salvando..." : editando ? "Salvar alteracoes" : "Cadastrar personal"}
+                    </button>
+                    ${editando ? `<button type="button" data-acao="cancelar-edicao-personal" class="${classes.botaoSecundario}">Cancelar</button>` : ""}
+                </div>
             </form>
         </section>
     `;
@@ -1181,21 +1445,30 @@ function renderListaPersonais(personais) {
                 ${personais.length === 0 ? renderVazio("Nenhum personal cadastrado.") : personais.map((personal) => `
                     <article class="rounded-[24px] border border-white/10 bg-black/25 p-5">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h4 class="font-display text-xl font-semibold text-white">${escaparHtml(personal.nome)}</h4>
-                                <p class="mt-1 text-sm text-stone-400">${escaparHtml(personal.email)}</p>
-                            </div>
+                             <div>
+                                 <h4 class="font-display text-xl font-semibold text-white">${escaparHtml(personal.nome)}</h4>
+                                 <p class="mt-1 text-sm text-stone-400">${escaparHtml(personal.email)}</p>
+                                 <span class="mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${personal.ativo !== false ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200" : "border-red-400/20 bg-red-500/10 text-red-200"}">
+                                     ${personal.ativo !== false ? "Ativo" : "Inativo"}
+                                 </span>
+                             </div>
                             <div class="rounded-2xl border border-ember-400/20 bg-ember-500/10 px-4 py-3 text-center">
                                 <p class="text-xs uppercase tracking-[0.2em] text-ember-200">Codigo de vinculo</p>
                                 <p class="mt-1 font-display text-xl font-bold text-white">${escaparHtml(personal.codigoVinculo)}</p>
                             </div>
                         </div>
-                        <div class="mt-4 flex flex-wrap gap-2 text-xs text-stone-300">
-                            <span class="rounded-full border border-white/10 px-3 py-1">${pluralizar(personal.totalAlunos, "aluno", "alunos")}</span>
-                            <span class="rounded-full border border-white/10 px-3 py-1">${pluralizar(personal.totalSolicitacoes, "solicitacao", "solicitacoes")}</span>
-                            <span class="rounded-full border border-white/10 px-3 py-1">Criado em ${escaparHtml(formatarData(personal.criadoEm))}</span>
-                        </div>
-                    </article>
+                         <div class="mt-4 flex flex-wrap gap-2 text-xs text-stone-300">
+                             <span class="rounded-full border border-white/10 px-3 py-1">${pluralizar(personal.totalAlunos, "aluno", "alunos")}</span>
+                             <span class="rounded-full border border-white/10 px-3 py-1">${pluralizar(personal.totalSolicitacoes, "solicitacao", "solicitacoes")}</span>
+                             <span class="rounded-full border border-white/10 px-3 py-1">Criado em ${escaparHtml(formatarData(personal.criadoEm))}</span>
+                         </div>
+                         <div class="mt-5 flex flex-wrap gap-3 border-t border-white/10 pt-4">
+                             <button type="button" data-acao="editar-personal" data-personal-id="${escaparHtml(personal.id)}" class="${classes.botaoSecundario} px-4 py-2">Editar</button>
+                             <button type="button" data-acao="alterar-status-personal" data-personal-id="${escaparHtml(personal.id)}" data-ativo="${personal.ativo === false}" class="${personal.ativo === false ? `${classes.botaoPrimario} px-4 py-2` : classes.botaoPerigo}">
+                                 ${personal.ativo === false ? "Reativar" : "Desativar"}
+                             </button>
+                         </div>
+                     </article>
                 `).join("")}
             </div>
         </section>
@@ -1205,6 +1478,12 @@ function renderListaPersonais(personais) {
 function renderPainelPersonal() {
     const painel = estado.personal.painel;
     const alunos = painel?.alunos || [];
+    const termoBusca = normalizarTexto(estado.personal.buscaAluno);
+    const alunosFiltrados = termoBusca
+        ? alunos.filter((aluno) => normalizarTexto(
+            `${aluno.nome} ${aluno.email} ${aluno.objetivoTreino || ""}`
+        ).includes(termoBusca))
+        : alunos;
     const solicitacoes = painel?.solicitacoes || [];
     const alunoAtual = estado.personal.detalheAluno?.aluno || null;
     const fichasAtual = estado.personal.detalheAluno?.fichas || [];
@@ -1238,7 +1517,7 @@ function renderPainelPersonal() {
 
             <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                 <div class="space-y-6">
-                    ${renderCarteiraAlunos(alunos)}
+                    ${renderCarteiraAlunos(alunosFiltrados, alunos.length)}
                     ${renderDetalheAluno(alunoAtual, fichasAtual, registrosAtuais)}
                 </div>
                 ${renderFormularioNovaFicha(alunos, alunoAtual)}
@@ -1274,7 +1553,9 @@ function renderSolicitacoes(solicitacoes) {
     `;
 }
 
-function renderCarteiraAlunos(alunos) {
+function renderCarteiraAlunos(alunos, totalAlunos) {
+    const pesquisando = Boolean(estado.personal.buscaAluno);
+
     return `
         <section class="soft-rise ${classes.painel}">
             <div class="flex items-center justify-between gap-3">
@@ -1282,10 +1563,15 @@ function renderCarteiraAlunos(alunos) {
                     <p class="${classes.badge} w-fit">Carteira</p>
                     <h3 class="mt-4 font-display text-2xl font-semibold text-white">Alunos vinculados</h3>
                 </div>
-                <span class="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-stone-300">${alunos.length}</span>
+                <span class="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-stone-300">${pesquisando ? `${alunos.length}/${totalAlunos}` : alunos.length}</span>
             </div>
+            <form data-form-submit="pesquisa-alunos" class="mt-5 flex flex-col gap-3 sm:flex-row">
+                <input data-formulario="pesquisaAlunos" name="termo" type="search" class="${classes.campo}" placeholder="Buscar por nome, email ou objetivo" value="${escaparHtml(estado.formularios.pesquisaAlunos.termo)}">
+                <button type="submit" class="${classes.botaoPrimario} px-5 py-2">Buscar</button>
+                ${pesquisando ? `<button type="button" data-acao="limpar-pesquisa-alunos" class="${classes.botaoSecundario} px-5 py-2">Limpar</button>` : ""}
+            </form>
             <div class="mt-6 space-y-3">
-                ${alunos.length === 0 ? renderVazio("Aprove uma solicitacao para adicionar o primeiro aluno.") : alunos.map((aluno) => `
+                ${alunos.length === 0 ? renderVazio(pesquisando ? "Nenhum aluno corresponde a pesquisa." : "Aprove uma solicitacao para adicionar o primeiro aluno.") : alunos.map((aluno) => `
                     <button type="button" data-acao="selecionar-aluno" data-aluno-id="${escaparHtml(aluno.id)}" class="w-full rounded-[24px] border px-5 py-4 text-left transition ${
                         aluno.id === estado.personal.alunoSelecionadoId
                             ? "border-ember-400/40 bg-ember-500/10"
@@ -1315,18 +1601,25 @@ function renderDetalheAluno(alunoAtual, fichasAtual, registrosAtuais) {
 
     const fichasDisponiveis = fichasAtual.filter((ficha) => ficha.status !== "arquivada");
     const idsFichas = new Set(fichasDisponiveis.map((ficha) => ficha.id));
-    const registrosSemFicha = registrosAtuais.filter((registro) => !idsFichas.has(registro.fichaId));
+    const registrosFiltrados = filtrarRegistrosHistorico(
+        registrosAtuais,
+        estado.personal.filtrosHistorico
+    );
+    const registrosSemFicha = registrosFiltrados.filter((registro) => (
+        !idsFichas.has(registro.fichaId)
+    ));
 
     return `
         <section class="soft-rise ${classes.painel}">
             <p class="${classes.badge} w-fit">Aluno selecionado</p>
             <h3 class="mt-4 font-display text-2xl font-semibold text-white">${escaparHtml(alunoAtual.nome)}</h3>
             <p class="mt-2 text-sm text-stone-400">${escaparHtml(alunoAtual.email)} | ${escaparHtml(alunoAtual.objetivoTreino || "Sem objetivo")}</p>
+            ${renderFiltrosHistorico(fichasAtual, registrosAtuais, "personal")}
             <div class="mt-6 space-y-4">
                 ${fichasDisponiveis.length === 0 ? renderVazio("Esse aluno ainda nao possui uma ficha.") : fichasDisponiveis.map((ficha) => renderCardFicha(
                     ficha,
                     false,
-                    registrosAtuais.filter((registro) => registro.fichaId === ficha.id),
+                    registrosFiltrados.filter((registro) => registro.fichaId === ficha.id),
                     true
                 )).join("")}
                 ${renderHistoricoFichasRemovidas(registrosSemFicha)}
@@ -1431,8 +1724,14 @@ function renderPainelAluno() {
     const fichas = estado.aluno.fichas;
     const fichasAtivas = fichas.filter((ficha) => ficha.status !== "arquivada");
     const registros = estado.aluno.registros;
+    const registrosFiltrados = filtrarRegistrosHistorico(
+        registros,
+        estado.aluno.filtrosHistorico
+    );
     const idsFichasAtivas = new Set(fichasAtivas.map((ficha) => ficha.id));
-    const registrosSemFicha = registros.filter((registro) => !idsFichasAtivas.has(registro.fichaId));
+    const registrosSemFicha = registrosFiltrados.filter((registro) => (
+        !idsFichasAtivas.has(registro.fichaId)
+    ));
 
     return `
         <section class="space-y-6 pb-10">
@@ -1463,11 +1762,12 @@ function renderPainelAluno() {
                         </div>
                         <span class="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-stone-300">${fichasAtivas.length}</span>
                     </div>
+                    ${renderFiltrosHistorico(fichas, registros, "aluno")}
                     <div class="mt-6 space-y-4">
                         ${fichasAtivas.length === 0 ? renderVazio("Nenhuma ficha disponivel no momento.") : fichasAtivas.map((ficha) => renderCardFicha(
                             ficha,
                             true,
-                            registros.filter((registro) => registro.fichaId === ficha.id)
+                            registrosFiltrados.filter((registro) => registro.fichaId === ficha.id)
                         )).join("")}
                         ${renderHistoricoFichasRemovidas(registrosSemFicha)}
                     </div>
@@ -1751,6 +2051,60 @@ function renderLinhaRegistroExercicio(exercicio, indice) {
                 </label>
             </div>
         </div>
+    `;
+}
+
+function renderFiltrosHistorico(fichas, registros, escopo) {
+    if (registros.length === 0) {
+        return "";
+    }
+
+    const filtros = estado[escopo].filtrosHistorico;
+    const fichasDoHistorico = new Map();
+
+    fichas.forEach((ficha) => fichasDoHistorico.set(ficha.id, ficha.nomeFicha));
+    registros.forEach((registro) => {
+        if (!fichasDoHistorico.has(registro.fichaId)) {
+            fichasDoHistorico.set(
+                registro.fichaId,
+                registro.nomeFicha || "Ficha excluida"
+            );
+        }
+    });
+
+    const possuiFiltro = Boolean(
+        filtros.fichaId || filtros.dataInicio || filtros.dataFim
+    );
+
+    return `
+        <section class="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-stone-500">Historico</p>
+                    <h4 class="mt-1 font-display text-lg font-semibold text-white">Filtrar treinos registrados</h4>
+                </div>
+                ${possuiFiltro ? `<button type="button" data-acao="limpar-filtros-historico" data-escopo="${escopo}" class="${classes.botaoSecundario} px-4 py-2">Limpar filtros</button>` : ""}
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-3">
+                <label class="block">
+                    <span class="mb-2 block text-xs text-stone-400">Ficha</span>
+                    <select data-controle="filtro-historico" data-escopo="${escopo}" data-campo="fichaId" class="${classes.campo}">
+                        <option value="">Todas as fichas</option>
+                        ${Array.from(fichasDoHistorico, ([fichaId, nomeFicha]) => `
+                            <option value="${escaparHtml(fichaId)}" ${filtros.fichaId === fichaId ? "selected" : ""}>${escaparHtml(nomeFicha)}</option>
+                        `).join("")}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-2 block text-xs text-stone-400">Data inicial</span>
+                    <input data-controle="filtro-historico" data-escopo="${escopo}" data-campo="dataInicio" type="date" class="${classes.campo}" value="${escaparHtml(filtros.dataInicio)}">
+                </label>
+                <label class="block">
+                    <span class="mb-2 block text-xs text-stone-400">Data final</span>
+                    <input data-controle="filtro-historico" data-escopo="${escopo}" data-campo="dataFim" type="date" class="${classes.campo}" value="${escaparHtml(filtros.dataFim)}">
+                </label>
+            </div>
+        </section>
     `;
 }
 
