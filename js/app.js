@@ -1,5 +1,6 @@
 const CHAVE_TOKEN = "iron_pump_token";
 const CHAVE_USUARIO = "iron_pump_usuario";
+const URL_BASE_API = (globalThis.configuracaoIronPump?.urlApi || "").replace(/\/+$/, "");
 
 const classes = {
     painel: "metal-panel relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl",
@@ -371,7 +372,7 @@ async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
         configuracao.body = JSON.stringify(corpo);
     }
 
-    const resposta = await fetch(caminho, configuracao);
+    const resposta = await fetch(`${URL_BASE_API}${caminho}`, configuracao);
     const tipoConteudo = resposta.headers.get("content-type") || "";
     const payload = tipoConteudo.includes("application/json")
         ? await resposta.json()

@@ -1,0 +1,37 @@
+databases:
+  - name: iron-pump-db
+    plan: free
+    databaseName: iron_pump
+    user: iron_pump
+
+services:
+  - type: web
+    name: iron-pump-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PERSISTENCIA
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iron-pump-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "false"
+      - key: DATABASE_POOL_MAX
+        value: "5"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: http://localhost:3000,http://127.0.0.1:3000
+      - key: ADMIN_NAME
+        value: Administrador Iron Pump
+      - key: ADMIN_EMAIL
+        value: admin@ironpump.com
+      - key: ADMIN_PASSWORD
+        sync: false

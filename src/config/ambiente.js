@@ -2,10 +2,17 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+const origensCors = (process.env.CORS_ORIGINS
+    || "http://localhost:3000,http://127.0.0.1:3000")
+    .split(",")
+    .map((origem) => origem.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+
 const ambiente = {
     porta: Number(process.env.PORT) || 3000,
     chaveJwt: process.env.JWT_SECRET || "iron-pump-chave-local",
     persistencia: process.env.PERSISTENCIA === "postgres" ? "postgres" : "memoria",
+    origensCors,
     banco: {
         url: process.env.DATABASE_URL || "",
         ssl: process.env.DATABASE_SSL === "true",

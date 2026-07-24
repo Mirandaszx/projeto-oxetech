@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+const { ambiente } = require("./config/ambiente");
 const rotasApi = require("./routes");
 const rotaNaoEncontrada = require("./middlewares/rotaNaoEncontrada");
 const tratarErros = require("./middlewares/tratadorErros");
@@ -9,7 +10,15 @@ const tratarErros = require("./middlewares/tratadorErros");
 const aplicativo = express();
 const diretorioRaiz = path.resolve(__dirname, "..");
 
-aplicativo.use(cors());
+aplicativo.use(cors({
+    origin(origem, concluir) {
+        if (!origem || ambiente.origensCors.includes(origem.replace(/\/$/, ""))) {
+            return concluir(null, true);
+        }
+
+        return concluir(null, false);
+    }
+}));
 aplicativo.use(express.json({ limit: "100kb" }));
 aplicativo.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
