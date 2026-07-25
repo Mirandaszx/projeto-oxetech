@@ -88,6 +88,12 @@ async function aprovarSolicitacao(requisicao, resposta) {
         "ativo"
     );
 
+    if (!alunoAtualizado) {
+        return resposta.status(409).json({
+            mensagem: "Esta solicitacao ja foi respondida."
+        });
+    }
+
     return resposta.json({
         mensagem: "Aluno aprovado e adicionado a sua carteira.",
         aluno: montarAlunoPublico(alunoAtualizado)

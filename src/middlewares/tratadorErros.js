@@ -1,4 +1,14 @@
 function tratarErros(erro, requisicao, resposta, _proximo) {
+    const errosRequisicao = {
+        "entity.parse.failed": {
+            status: 400,
+            mensagem: "O corpo da requisicao deve conter um JSON valido."
+        },
+        "entity.too.large": {
+            status: 413,
+            mensagem: "O corpo da requisicao ultrapassou o limite de tamanho permitido."
+        }
+    };
     const errosPostgres = {
         "22001": {
             status: 400,
@@ -25,12 +35,19 @@ function tratarErros(erro, requisicao, resposta, _proximo) {
             mensagem: "Um dos valores informados nao e permitido."
         }
     };
+    const erroRequisicao = errosRequisicao[erro.type];
     const erroPostgres = errosPostgres[erro.code];
-    const codigoStatus = erro.statusCode || erroPostgres?.status || 500;
+    const codigoStatus = erroRequisicao?.status
+        || erro.statusCode
+        || erroPostgres?.status
+        || 500;
     const erroInterno = codigoStatus >= 500;
     const mensagem = erroInterno
         ? "Erro interno do servidor."
-        : erroPostgres?.mensagem || erro.message || "Nao foi possivel concluir a solicitacao.";
+        : erroRequisicao?.mensagem
+            || erroPostgres?.mensagem
+            || erro.message
+            || "Nao foi possivel concluir a solicitacao.";
 
     if (erroInterno) {
         console.error(erro);
