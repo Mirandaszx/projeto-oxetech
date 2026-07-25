@@ -238,7 +238,3 @@ As rotas recebem as requisições, os controllers aplicam as regras de negócio,
 ## Aplicação publicada
 
 O Iron Pump está disponível em [iron-pump-2dky.onrender.com](https://iron-pump-2dky.onrender.com).
-
-## Licença
-
-Este é um projeto acadêmico distribuído sob a licença ISC.

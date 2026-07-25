@@ -33,6 +33,7 @@ function montarAlunoPublico(aluno) {
 }
 
 async function solicitarVinculo(requisicao, resposta) {
+    // O vinculo nasce pendente e so fica ativo depois da aprovacao do personal.
     const codigoPersonal = String(requisicao.body.codigoPersonal || "").trim().toUpperCase();
 
     if (!codigoPersonal) {
@@ -108,6 +109,7 @@ async function listarMinhasFichas(requisicao, resposta) {
 }
 
 async function cadastrarMinhaFicha(requisicao, resposta) {
+    // O controller aplica as regras antes de delegar a persistencia ao repositorio.
     const mensagemValidacao = validarFichaTreino(requisicao.body);
 
     if (mensagemValidacao) {
@@ -306,6 +308,7 @@ async function registrarTreino(requisicao, resposta) {
         return resposta.status(400).json({ mensagem: mensagemValidacao });
     }
 
+    // O registro salva um snapshot da ficha para futuras edicoes nao alterarem o historico.
     const registro = await criarRegistroTreino({
         id: randomUUID(),
         alunoId: requisicao.usuario.id,
@@ -345,6 +348,7 @@ async function listarMeusRegistros(requisicao, resposta) {
 }
 
 async function encerrarVinculo(requisicao, resposta) {
+    // Encerrar o acompanhamento nao remove fichas nem registros que pertencem ao aluno.
     const statusAtual = requisicao.usuario.statusVinculo || "sem_vinculo";
 
     if (!requisicao.usuario.personalId || !["ativo", "pendente"].includes(statusAtual)) {

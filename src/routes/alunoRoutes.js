@@ -8,9 +8,13 @@ const validarUuidParametro = require("../middlewares/validarUuidParametro");
 const roteador = Router();
 
 roteador.param("fichaId", validarUuidParametro);
+
+// A partir daqui, todas as rotas exigem JWT valido e perfil de aluno.
 roteador.use(autenticarToken, autorizarPerfis("aluno"));
 
 roteador.get("/painel", controladorAluno.obterMeuPainel);
+
+// Recurso principal do projeto: CRUD completo das fichas de treino.
 roteador.get("/fichas", controladorAluno.listarMinhasFichas);
 roteador.post("/fichas", controladorAluno.cadastrarMinhaFicha);
 roteador.put("/fichas/:fichaId", controladorAluno.atualizarMinhaFicha);

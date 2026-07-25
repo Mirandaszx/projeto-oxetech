@@ -10,6 +10,7 @@ import {
 import { renderPainelPersonal } from "./personal.js";
 
 export function renderAplicacao(estado) {
+    // A View escolhe a area publica ou o painel correspondente ao perfil autenticado.
     return `
         <main class="relative mx-auto flex min-h-screen min-w-0 w-full max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
             ${renderCabecalho(estado)}

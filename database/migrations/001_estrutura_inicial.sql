@@ -1,3 +1,4 @@
+-- Usuarios concentra os tres perfis autenticaveis da aplicacao.
 CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- O vinculo registra todo o ciclo de solicitacao e acompanhamento.
 CREATE TABLE IF NOT EXISTS vinculos_acompanhamento (
     id UUID PRIMARY KEY,
     aluno_id UUID NOT NULL REFERENCES usuarios(id),
@@ -29,6 +31,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS vinculo_atual_unico_por_aluno
 CREATE INDEX IF NOT EXISTS vinculos_por_personal_status
     ON vinculos_acompanhamento (personal_id, status);
 
+-- Ficha e exercicios ficam separados em uma relacao de um para muitos.
 CREATE TABLE IF NOT EXISTS fichas_treino (
     id UUID PRIMARY KEY,
     aluno_id UUID NOT NULL REFERENCES usuarios(id),
@@ -71,6 +74,7 @@ CREATE TABLE IF NOT EXISTS exercicios_ficha (
     UNIQUE (ficha_id, ordem)
 );
 
+-- O historico guarda snapshots para permanecer valido mesmo se a ficha mudar.
 CREATE TABLE IF NOT EXISTS registros_treino (
     id UUID PRIMARY KEY,
     aluno_id UUID NOT NULL REFERENCES usuarios(id),

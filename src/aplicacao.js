@@ -10,6 +10,7 @@ const tratarErros = require("./middlewares/tratadorErros");
 const aplicativo = express();
 const diretorioRaiz = path.resolve(__dirname, "..");
 
+// Em producao, somente as origens configuradas podem consumir a API pelo navegador.
 aplicativo.use(cors({
     origin(origem, concluir) {
         if (!origem || ambiente.origensCors.includes(origem.replace(/\/$/, ""))) {
@@ -22,7 +23,7 @@ aplicativo.use(cors({
 aplicativo.use(express.json({ limit: "100kb" }));
 aplicativo.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
-// Mantem o front atual funcionando enquanto o backend cresce por etapas.
+// A API e os arquivos do frontend sao entregues pelo mesmo servidor Express.
 aplicativo.use("/css", express.static(path.join(diretorioRaiz, "css")));
 aplicativo.use("/js", express.static(path.join(diretorioRaiz, "js")));
 aplicativo.use("/api", rotasApi);

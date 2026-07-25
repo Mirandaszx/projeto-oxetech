@@ -10,6 +10,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm ci
+    # Garante as contas documentadas antes de iniciar o servidor de avaliacao.
     startCommand: npm run start:render
     healthCheckPath: /api/status
     envVars:

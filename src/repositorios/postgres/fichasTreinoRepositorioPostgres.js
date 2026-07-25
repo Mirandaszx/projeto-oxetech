@@ -1,5 +1,6 @@
 const { obterPool } = require("../../banco/conexao");
 
+// A consulta agrega os exercicios em JSON para devolver cada ficha completa em uma leitura.
 const consultaBaseFicha = `
     SELECT
         f.*,
@@ -112,6 +113,7 @@ async function criarFichaTreino(fichaTreino) {
     const cliente = await obterPool().connect();
 
     try {
+        // Ficha e exercicios formam uma unica operacao: qualquer falha desfaz tudo.
         await cliente.query("BEGIN");
         await cliente.query(
             `INSERT INTO fichas_treino (
@@ -170,6 +172,7 @@ async function atualizarFichaTreino(fichaId, dadosAtualizados) {
 
     try {
         await cliente.query("BEGIN");
+        // O bloqueio evita duas atualizacoes concorrentes sobre a mesma ficha.
         const resultadoAtual = await cliente.query(
             "SELECT * FROM fichas_treino WHERE id = $1 FOR UPDATE",
             [fichaId]
@@ -230,6 +233,7 @@ async function atualizarFichaTreino(fichaId, dadosAtualizados) {
 }
 
 async function removerFichaTreino(fichaId) {
+    // A FK dos registros usa ON DELETE SET NULL, preservando o historico da ficha excluida.
     const resultado = await obterPool().query(
         "DELETE FROM fichas_treino WHERE id = $1",
         [fichaId]

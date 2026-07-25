@@ -4,6 +4,7 @@ const { ambiente } = require("../config/ambiente");
 const { buscarUsuarioPorId } = require("../repositorios/usuariosRepositorio");
 
 async function autenticarToken(requisicao, resposta, proximo) {
+    // As rotas privadas esperam o formato padrao: Authorization: Bearer <token>.
     const cabecalhoAutorizacao = requisicao.headers.authorization || "";
     const [tipo, token] = cabecalhoAutorizacao.split(" ");
 
@@ -16,6 +17,7 @@ async function autenticarToken(requisicao, resposta, proximo) {
     let conteudoToken;
 
     try {
+        // jwt.verify valida assinatura e expiracao antes de liberar a requisicao.
         conteudoToken = jwt.verify(token, ambiente.chaveJwt);
     } catch (_erro) {
         return resposta.status(401).json({
@@ -24,6 +26,7 @@ async function autenticarToken(requisicao, resposta, proximo) {
     }
 
     try {
+        // Reconsulta o banco para bloquear imediatamente contas desativadas.
         const usuario = await buscarUsuarioPorId(conteudoToken.sub);
 
         if (!usuario) {

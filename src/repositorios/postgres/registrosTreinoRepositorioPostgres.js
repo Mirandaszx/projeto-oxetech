@@ -27,6 +27,7 @@ async function criarRegistroTreino(registroTreino) {
     const cliente = await obterPool().connect();
 
     try {
+        // Cabecalho e resultados dos exercicios sao persistidos na mesma transacao.
         await cliente.query("BEGIN");
         await cliente.query(
             `INSERT INTO registros_treino (

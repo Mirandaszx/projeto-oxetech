@@ -17,6 +17,7 @@ const {
 } = require("../validacoes/conta");
 
 function montarUsuarioPublico(usuario) {
+    // A senha e seu hash nunca fazem parte das respostas da API.
     return {
         id: usuario.id,
         nome: usuario.nome,
@@ -32,6 +33,7 @@ function montarUsuarioPublico(usuario) {
 }
 
 function criarToken(usuario) {
+    // O token leva apenas a identidade e o perfil, com expiracao obrigatoria.
     return jwt.sign(
         {
             sub: usuario.id,
@@ -118,6 +120,7 @@ async function entrar(requisicao, resposta) {
         });
     }
 
+    // O bcrypt compara a senha informada sem recuperar a senha original.
     const senhaCorreta = await bcrypt.compare(senha, usuario.senhaHash);
 
     if (!senhaCorreta) {

@@ -153,6 +153,7 @@ async function definirVinculoAluno(alunoId, personalId, statusVinculo) {
     const cliente = await obterPool().connect();
 
     try {
+        // A transacao garante apenas um vinculo pendente ou ativo por aluno.
         await cliente.query("BEGIN");
 
         const usuario = await cliente.query(

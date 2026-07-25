@@ -28,6 +28,7 @@ async function garantirAdministradorInicial() {
 }
 
 async function inicializarPersistencia() {
+    // Esta ordem evita iniciar a aplicacao com banco indisponivel ou estrutura desatualizada.
     await testarConexao();
     await executarMigracoes();
     await garantirAdministradorInicial();

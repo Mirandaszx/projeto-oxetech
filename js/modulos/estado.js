@@ -12,6 +12,7 @@ function lerItemJson(chave, valorPadrao) {
     }
 }
 
+// Estado central compartilhado pelos formularios e pelas telas dos tres perfis.
 export const estado = {
     token: localStorage.getItem(CHAVE_TOKEN) || "",
     usuario: lerItemJson(CHAVE_USUARIO, null),

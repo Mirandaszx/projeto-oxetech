@@ -8,6 +8,7 @@ const rotasStatus = require("./statusRoutes");
 
 const roteador = Router();
 
+// Cada prefixo direciona a requisicao para uma camada de rotas especializada.
 roteador.use("/status", rotasStatus);
 roteador.use("/health", rotasStatus);
 roteador.use("/autenticacao", rotasAutenticacao);

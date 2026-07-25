@@ -14,6 +14,7 @@ const areaNotificacoes = document.getElementById("notificacoes");
 let timeoutNotificacao = null;
 
 async function iniciarAplicacao() {
+    // Delegacao de eventos permite controlar toda a interface por um ponto central.
     raiz.addEventListener("click", (evento) => void lidarClique(evento));
     raiz.addEventListener("submit", (evento) => void lidarEnvio(evento));
     raiz.addEventListener("keydown", impedirSinalNegativo);
@@ -51,6 +52,7 @@ function renderizarNotificacao() {
 }
 
 async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
+    // Todas as chamadas passam por aqui para compartilhar JSON, JWT e tratamento de erros.
     const configuracao = {
         method: metodo,
         headers: {}
@@ -79,6 +81,7 @@ async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
             && typeof payload === "object"
             && payload.codigo === "CONTA_DESATIVADA";
 
+        // Uma sessao invalida limpa dados privados; 403 comum preserva a sessao atual.
         if ((resposta.status === 401 || contaDesativada) && estado.token) {
             limparSessao();
             limparEstadoPrivado();
@@ -169,6 +172,7 @@ async function carregarDetalheAluno(alunoId) {
 }
 
 async function carregarPainelAluno() {
+    // Requisicoes independentes sao executadas em paralelo para reduzir o carregamento.
     const [painel, fichas, registros] = await Promise.all([
         requisicaoApi("/api/aluno/painel"),
         requisicaoApi("/api/aluno/fichas"),
@@ -299,6 +303,7 @@ function encerrarSessao() {
 }
 
 async function executarEnvio(nomeProcesso, acao) {
+    // Centraliza estado de carregamento e mensagem de erro dos formularios.
     estado.processando = nomeProcesso;
     renderizar();
 
@@ -850,6 +855,7 @@ async function lidarCampo(evento) {
 
 
 function renderizar() {
+    // Os modulos de renderizacao funcionam como a camada View da arquitetura.
     raiz.innerHTML = renderAplicacao(estado);
 }
 

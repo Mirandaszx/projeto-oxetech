@@ -6,6 +6,7 @@ const { obterPool, encerrarPool } = require("./conexao");
 const { executarMigracoes } = require("./migrar");
 
 async function garantirUsuario(cliente, usuario) {
+    // O seed e idempotente: atualiza a conta de demonstracao se ela ja existir.
     const email = usuario.email.trim().toLowerCase();
     const existente = await cliente.query(
         "SELECT id FROM usuarios WHERE email = $1 FOR UPDATE",
@@ -231,6 +232,7 @@ async function garantirRegistroDemonstracao(cliente, alunoId, fichaId) {
 }
 
 async function semearDemonstracao() {
+    // Prepara um fluxo completo para a avaliacao sem duplicar dados a cada deploy.
     await executarMigracoes();
     const cliente = await obterPool().connect();
     const personal = ambiente.demonstracao.personal;

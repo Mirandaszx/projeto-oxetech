@@ -4,6 +4,7 @@ const { inicializarPersistencia } = require("./src/banco/inicializarPersistencia
 const { encerrarPool } = require("./src/banco/conexao");
 
 async function iniciarServidor() {
+    // A API so aceita requisicoes depois de validar o banco e executar as migrations.
     await inicializarPersistencia();
 
     const servidor = aplicativo.listen(ambiente.porta, () => {
@@ -11,6 +12,7 @@ async function iniciarServidor() {
     });
 
     async function encerrarServidor() {
+        // Fecha servidor e pool para nao deixar conexoes abertas ao encerrar o processo.
         servidor.close(async () => {
             await encerrarPool();
             process.exit(0);
