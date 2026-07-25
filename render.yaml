@@ -26,7 +26,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: http://localhost:3000,http://127.0.0.1:3000
+        value: https://iron-pump-2dky.onrender.com,http://localhost:3000,http://127.0.0.1:3000
       - key: ADMIN_NAME
         value: Administrador Iron Pump
       - key: ADMIN_EMAIL

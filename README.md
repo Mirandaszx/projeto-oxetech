@@ -235,6 +235,10 @@ As rotas recebem as requisições, os controllers aplicam as regras de negócio,
 - `npm run db:migrate`: executa as migrations pendentes.
 - `npm run db:seed`: prepara os usuários e a ficha de demonstração.
 
+## Aplicação publicada
+
+O Iron Pump está disponível em [iron-pump-2dky.onrender.com](https://iron-pump-2dky.onrender.com).
+
 ## Licença
 
 Este é um projeto acadêmico distribuído sob a licença ISC.
