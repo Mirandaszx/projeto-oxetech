@@ -219,7 +219,9 @@ function dataTreinoValida(valor) {
 function inteiroNoIntervalo(valor, maximo) {
     const texto = String(valor ?? "").trim();
 
-    return /^\d+$/.test(texto) && Number(texto) <= maximo;
+    return /^\d+$/.test(texto)
+        && Number(texto) > 0
+        && Number(texto) <= maximo;
 }
 
 function repeticoesValidas(valor) {
@@ -229,7 +231,11 @@ function repeticoesValidas(valor) {
         return false;
     }
 
-    return texto.split("/").every((item) => Number(item.trim()) <= 500);
+    return texto.split("/").every((item) => {
+        const quantidade = Number(item.trim());
+
+        return quantidade > 0 && quantidade <= 500;
+    });
 }
 
 function validarRegistroTreino({ dataTreino, observacoes, exercicios }, ficha) {

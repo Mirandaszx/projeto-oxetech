@@ -76,6 +76,10 @@ body::before {
     animation: soft-rise 0.45s ease both;
 }
 
+#app.interface-estavel .soft-rise {
+    animation: none;
+}
+
 @keyframes soft-rise {
     from {
         opacity: 0;

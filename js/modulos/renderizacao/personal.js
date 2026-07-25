@@ -228,10 +228,15 @@ function renderFormularioNovaFicha(estado, alunos, alunoAtual) {
 }
 
 function renderLinhaExercicio(exercicio, indice) {
+    const atributosQuantidade = (nome, tipo) => (
+        tipo === "number"
+            ? ` min="1" max="${nome === "series" ? 20 : 500}" step="1" data-quantidade-positiva`
+            : ""
+    );
     const campo = (nome, rotulo, placeholder, tipo = "text") => `
         <label class="block">
             <span class="mb-2 block text-sm font-medium text-stone-300">${rotulo}</span>
-            <input data-indice="${indice}" data-exercicio-campo="${nome}" type="${tipo}" class="${classes.campo}" placeholder="${placeholder}" value="${escaparHtml(exercicio[nome])}">
+            <input data-indice="${indice}" data-exercicio-campo="${nome}" type="${tipo}"${atributosQuantidade(nome, tipo)} class="${classes.campo}" placeholder="${placeholder}" value="${escaparHtml(exercicio[nome])}">
         </label>
     `;
 

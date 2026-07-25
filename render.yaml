@@ -10,7 +10,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm ci
-    startCommand: npm start
+    startCommand: npm run start:render
     healthCheckPath: /api/status
     envVars:
       - key: NODE_ENV
@@ -32,4 +32,4 @@ services:
       - key: ADMIN_EMAIL
         value: admin@ironpump.com
       - key: ADMIN_PASSWORD
-        sync: false
+        value: "123456"

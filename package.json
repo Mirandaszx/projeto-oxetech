@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "start:render": "npm run db:seed && node server.js",
     "db:check": "node src/banco/verificarConexao.js",
     "db:migrate": "node src/banco/migrar.js",
     "db:seed": "node src/banco/semearDemonstracao.js"

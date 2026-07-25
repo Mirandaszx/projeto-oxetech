@@ -109,11 +109,11 @@ function renderLinhaRegistroExercicio(exercicio, indice) {
             <div class="mt-3 grid gap-3 sm:grid-cols-3">
                 <label class="block">
                     <span class="mb-2 block text-xs text-stone-400">Series realizadas</span>
-                    <input data-indice="${indice}" data-registro-campo="seriesConcluidas" type="number" min="0" class="${classes.campo}" value="${escaparHtml(exercicio.seriesConcluidas)}">
+                    <input data-indice="${indice}" data-registro-campo="seriesConcluidas" data-quantidade-positiva type="number" min="1" max="20" step="1" class="${classes.campo}" value="${escaparHtml(exercicio.seriesConcluidas)}">
                 </label>
                 <label class="block">
                     <span class="mb-2 block text-xs text-stone-400">Repeticoes</span>
-                    <input data-indice="${indice}" data-registro-campo="repeticoesRealizadas" type="text" class="${classes.campo}" placeholder="12 ou 12/10/8" value="${escaparHtml(exercicio.repeticoesRealizadas)}">
+                    <input data-indice="${indice}" data-registro-campo="repeticoesRealizadas" data-repeticoes-positivas type="text" pattern="[1-9][0-9]*(?:[ ]*/[ ]*[1-9][0-9]*)*" class="${classes.campo}" placeholder="12 ou 12/10/8" value="${escaparHtml(exercicio.repeticoesRealizadas)}">
                 </label>
                 <label class="block">
                     <span class="mb-2 block text-xs text-stone-400">Carga utilizada</span>

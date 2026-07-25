@@ -6,18 +6,25 @@ import {
     salvarSessao
 } from "./modulos/estado.js";
 import { renderAplicacao } from "./modulos/renderizacao/index.js";
+import { renderNotificacao } from "./modulos/renderizacao/comum.js";
 import { criarExercicioVazio, obterDataHoje } from "./modulos/utilidades.js";
 
 const raiz = document.getElementById("app");
+const areaNotificacoes = document.getElementById("notificacoes");
 let timeoutNotificacao = null;
 
 async function iniciarAplicacao() {
     raiz.addEventListener("click", (evento) => void lidarClique(evento));
     raiz.addEventListener("submit", (evento) => void lidarEnvio(evento));
+    raiz.addEventListener("keydown", impedirSinalNegativo);
     raiz.addEventListener("input", lidarCampo);
     raiz.addEventListener("change", (evento) => void lidarCampo(evento));
 
     renderizar();
+
+    setTimeout(() => {
+        raiz.classList.add("interface-estavel");
+    }, 500);
 
     if (estado.token) {
         await restaurarSessao();
@@ -31,12 +38,16 @@ async function iniciarAplicacao() {
 function mostrarNotificacao(texto, tipo = "sucesso") {
     clearTimeout(timeoutNotificacao);
     estado.notificacao = { texto, tipo };
-    renderizar();
+    renderizarNotificacao();
 
     timeoutNotificacao = setTimeout(() => {
         estado.notificacao = null;
-        renderizar();
+        renderizarNotificacao();
     }, 3200);
+}
+
+function renderizarNotificacao() {
+    areaNotificacoes.innerHTML = renderNotificacao(estado);
 }
 
 async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
@@ -758,7 +769,37 @@ async function lidarEnvio(evento) {
     await acoes[formulario.dataset.formSubmit]?.();
 }
 
+function limparQuantidadeInvalida(campo) {
+    if (campo.matches("[data-quantidade-positiva]")) {
+        const valor = campo.value.trim();
+
+        if (valor !== "" && (!/^\d+$/.test(valor) || Number(valor) < 1)) {
+            campo.value = "";
+        }
+    }
+
+    if (
+        campo.matches("[data-repeticoes-positivas]")
+        && campo.value.includes("-")
+    ) {
+        campo.value = "";
+    }
+}
+
+function impedirSinalNegativo(evento) {
+    if (
+        evento.key === "-"
+        && evento.target.matches(
+            "[data-quantidade-positiva], [data-repeticoes-positivas]"
+        )
+    ) {
+        evento.preventDefault();
+    }
+}
+
 async function lidarCampo(evento) {
+    limparQuantidadeInvalida(evento.target);
+
     const campoFormulario = evento.target.closest("[data-formulario]");
 
     if (campoFormulario) {
