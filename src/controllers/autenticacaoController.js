@@ -59,6 +59,12 @@ async function cadastrarUsuario(requisicao, resposta) {
     const objetivoTreino = String(requisicao.body.objetivoTreino || "").trim();
     const codigoPersonal = String(requisicao.body.codigoPersonal || "").trim().toUpperCase();
 
+    if (objetivoTreino.length > 120) {
+        return resposta.status(400).json({
+            mensagem: "O objetivo de treino deve ter no maximo 120 caracteres."
+        });
+    }
+
     if (await buscarUsuarioPorEmail(email)) {
         return resposta.status(409).json({
             mensagem: "Ja existe uma conta cadastrada com esse email."

@@ -11,7 +11,6 @@ const origensCors = (process.env.CORS_ORIGINS
 const ambiente = {
     porta: Number(process.env.PORT) || 3000,
     chaveJwt: process.env.JWT_SECRET || "iron-pump-chave-local",
-    persistencia: process.env.PERSISTENCIA === "postgres" ? "postgres" : "memoria",
     origensCors,
     banco: {
         url: process.env.DATABASE_URL || "",

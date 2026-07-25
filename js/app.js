@@ -1,11 +1,10 @@
 const CHAVE_TOKEN = "iron_pump_token";
 const CHAVE_USUARIO = "iron_pump_usuario";
-const URL_BASE_API = (globalThis.configuracaoIronPump?.urlApi || "").replace(/\/+$/, "");
 
 const classes = {
-    painel: "metal-panel relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl",
-    painelCompacto: "metal-panel relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl",
-    campo: "w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-ember-400/60 focus:bg-black/45 focus:ring-2 focus:ring-ember-500/20",
+    painel: "metal-panel relative min-w-0 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl",
+    painelCompacto: "metal-panel relative min-w-0 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl",
+    campo: "min-w-0 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-ember-400/60 focus:bg-black/45 focus:ring-2 focus:ring-ember-500/20",
     botaoPrimario: "inline-flex items-center justify-center rounded-full border border-ember-300/30 bg-ember-500 px-5 py-3 text-sm font-semibold text-coal-950 transition hover:bg-ember-400 disabled:cursor-not-allowed disabled:opacity-55",
     botaoSecundario: "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-stone-100 transition hover:border-ember-400/35 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-55",
     botaoPerigo: "inline-flex items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-55",
@@ -372,7 +371,7 @@ async function requisicaoApi(caminho, { metodo = "GET", corpo } = {}) {
         configuracao.body = JSON.stringify(corpo);
     }
 
-    const resposta = await fetch(`${URL_BASE_API}${caminho}`, configuracao);
+    const resposta = await fetch(caminho, configuracao);
     const tipoConteudo = resposta.headers.get("content-type") || "";
     const payload = tipoConteudo.includes("application/json")
         ? await resposta.json()
@@ -1128,7 +1127,7 @@ async function lidarCampo(evento) {
 function renderizar() {
     raiz.innerHTML = `
         ${renderNotificacao()}
-        <main class="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
+        <main class="relative mx-auto flex min-h-screen min-w-0 w-full max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
             ${renderCabecalho()}
             ${estado.carregandoInicial ? renderCarregandoInicial() : estado.usuario ? renderAreaPrivada() : renderAreaPublica()}
         </main>
@@ -1158,12 +1157,12 @@ function renderNotificacao() {
 
 function renderCabecalho() {
     return `
-        <header class="soft-rise ${classes.painel} mb-6 px-5 py-4 sm:px-6">
+        <header class="soft-rise ${classes.painel} mb-6 w-full px-4 py-4 sm:px-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-ember-400 to-ember-700 font-display text-xl font-bold text-coal-950">IP</div>
-                    <div>
-                        <h1 class="font-display text-2xl font-semibold text-white">Diario de Treino Iron Pump</h1>
+                <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-ember-400 to-ember-700 font-display text-lg font-bold text-coal-950 sm:h-14 sm:w-14 sm:text-xl">IP</div>
+                    <div class="min-w-0">
+                        <h1 class="break-words font-display text-xl font-semibold leading-tight text-white sm:text-2xl">Diario de Treino Iron Pump</h1>
                         <p class="mt-1 text-sm text-stone-400">Organize seus treinos em um so lugar</p>
                     </div>
                 </div>
@@ -1254,17 +1253,17 @@ function renderCarregandoInicial() {
 
 function renderAreaPublica() {
     return `
-        <section class="flex flex-1 items-start justify-center pb-10 pt-4 sm:items-center">
-            <aside class="soft-rise ${classes.painel} w-full max-w-xl p-6 sm:p-8">
-                <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+        <section class="flex min-w-0 w-full flex-1 items-start justify-center pb-10 pt-4 sm:items-center">
+            <aside class="soft-rise ${classes.painel} w-full max-w-xl p-5 sm:p-8">
+                <div class="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
                         <p class="${classes.badge} w-fit">Acesso</p>
                         <h2 class="mt-4 font-display text-3xl font-semibold text-white">${estado.abaAutenticacao === "login" ? "Entrar" : "Criar conta"}</h2>
                         <p class="mt-2 text-sm text-stone-400">${estado.abaAutenticacao === "login" ? "Use seu email e senha para continuar." : "Preencha seus dados para comecar."}</p>
                     </div>
-                    <div class="rounded-full border border-white/10 bg-black/20 p-1">
-                        <button type="button" data-acao="trocar-aba" data-aba="login" class="rounded-full px-4 py-2 text-sm font-semibold transition ${estado.abaAutenticacao === "login" ? "bg-ember-500 text-coal-950" : "text-stone-300"}">Login</button>
-                        <button type="button" data-acao="trocar-aba" data-aba="cadastro" class="rounded-full px-4 py-2 text-sm font-semibold transition ${estado.abaAutenticacao === "cadastro" ? "bg-ember-500 text-coal-950" : "text-stone-300"}">Cadastro</button>
+                    <div class="flex w-full rounded-full border border-white/10 bg-black/20 p-1 sm:w-auto">
+                        <button type="button" data-acao="trocar-aba" data-aba="login" class="flex-1 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${estado.abaAutenticacao === "login" ? "bg-ember-500 text-coal-950" : "text-stone-300"}">Login</button>
+                        <button type="button" data-acao="trocar-aba" data-aba="cadastro" class="flex-1 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${estado.abaAutenticacao === "cadastro" ? "bg-ember-500 text-coal-950" : "text-stone-300"}">Cadastro</button>
                     </div>
                 </div>
 

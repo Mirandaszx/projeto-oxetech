@@ -231,10 +231,6 @@ async function garantirRegistroDemonstracao(cliente, alunoId, fichaId) {
 }
 
 async function semearDemonstracao() {
-    if (ambiente.persistencia !== "postgres") {
-        throw new Error("Defina PERSISTENCIA=postgres antes de executar o seed.");
-    }
-
     await executarMigracoes();
     const cliente = await obterPool().connect();
     const personal = ambiente.demonstracao.personal;

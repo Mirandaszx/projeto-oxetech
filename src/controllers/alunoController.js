@@ -47,6 +47,12 @@ async function solicitarVinculo(requisicao, resposta) {
         });
     }
 
+    if (requisicao.usuario.statusVinculo === "pendente") {
+        return resposta.status(409).json({
+            mensagem: "Ja existe uma solicitacao pendente. Cancele-a antes de enviar outra."
+        });
+    }
+
     const personal = await buscarPersonalPorCodigo(codigoPersonal);
 
     if (!personal) {
@@ -196,12 +202,50 @@ async function removerMinhaFicha(requisicao, resposta) {
     });
 }
 
-function validarRegistroTreino({ dataTreino, exercicios }, ficha) {
-    if (!dataTreino) {
-        return "Informe a data em que o treino foi realizado.";
+function dataTreinoValida(valor) {
+    if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+        return false;
     }
 
-    if (!Array.isArray(exercicios) || exercicios.length !== ficha.exercicios.length) {
+    const [ano, mes, dia] = valor.split("-").map(Number);
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+
+    return ano > 0
+        && data.getUTCFullYear() === ano
+        && data.getUTCMonth() === mes - 1
+        && data.getUTCDate() === dia;
+}
+
+function inteiroNoIntervalo(valor, maximo) {
+    const texto = String(valor ?? "").trim();
+
+    return /^\d+$/.test(texto) && Number(texto) <= maximo;
+}
+
+function repeticoesValidas(valor) {
+    const texto = String(valor ?? "").trim();
+
+    if (texto.length > 40 || !/^\d+(?:\s*\/\s*\d+)*$/.test(texto)) {
+        return false;
+    }
+
+    return texto.split("/").every((item) => Number(item.trim()) <= 500);
+}
+
+function validarRegistroTreino({ dataTreino, observacoes, exercicios }, ficha) {
+    if (!dataTreinoValida(dataTreino)) {
+        return "Informe uma data de treino valida.";
+    }
+
+    if (String(observacoes || "").length > 500) {
+        return "As observacoes devem ter no maximo 500 caracteres.";
+    }
+
+    if (
+        !Array.isArray(exercicios)
+        || exercicios.length !== ficha.exercicios.length
+        || exercicios.some((exercicio) => !exercicio || typeof exercicio !== "object")
+    ) {
         return "Preencha o resultado de todos os exercicios da ficha.";
     }
 
@@ -215,16 +259,20 @@ function validarRegistroTreino({ dataTreino, exercicios }, ficha) {
         const pertenceAFicha = ficha.exercicios.some((itemFicha) => (
             itemFicha.id === exercicio.exercicioId
         ));
-        const seriesVazias = exercicio.seriesConcluidas === undefined
-            || String(exercicio.seriesConcluidas).trim() === "";
-        const repeticoesVazias = exercicio.repeticoesRealizadas === undefined
-            || String(exercicio.repeticoesRealizadas).trim() === "";
+        const seriesValidas = inteiroNoIntervalo(exercicio.seriesConcluidas, 20);
+        const resultadoRepeticoesValido = repeticoesValidas(
+            exercicio.repeticoesRealizadas
+        );
+        const cargaValida = String(exercicio.cargaUtilizada || "").length <= 40;
 
-        return !pertenceAFicha || seriesVazias || repeticoesVazias;
+        return !pertenceAFicha
+            || !seriesValidas
+            || !resultadoRepeticoesValido
+            || !cargaValida;
     });
 
     return exercicioInvalido
-        ? "Informe as series e repeticoes realizadas em todos os exercicios."
+        ? "Revise as series, repeticoes e cargas realizadas."
         : null;
 }
 

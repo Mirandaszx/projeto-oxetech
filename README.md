@@ -40,7 +40,6 @@ O aluno não depende de um personal para usar a aplicação. Quando existe acomp
 - PostgreSQL para persistência dos dados.
 - JWT para autenticação.
 - bcryptjs para proteger as senhas.
-- Node Test Runner para os testes automatizados.
 
 ## Executando o projeto do zero
 
@@ -48,7 +47,7 @@ O aluno não depende de um personal para usar a aplicação. Quando existe acomp
 
 Antes de começar, é necessário ter instalado:
 
-- Node.js 18 ou superior.
+- Node.js 20 ou superior.
 - npm.
 - PostgreSQL.
 
@@ -73,7 +72,6 @@ Depois, crie um arquivo `.env` na raiz do projeto usando o `.env.example` como r
 ```env
 PORT=3000
 JWT_SECRET=troque-por-uma-chave-segura
-PERSISTENCIA=postgres
 DATABASE_URL=postgresql://postgres:SUA_SENHA@localhost:5432/iron_pump
 DATABASE_SSL=false
 DATABASE_POOL_MAX=10
@@ -91,6 +89,8 @@ DEMO_ALUNO_OBJECTIVE=Hipertrofia
 ```
 
 O valor de `DATABASE_URL` deve usar o usuário, a senha e a porta da sua instalação do PostgreSQL. Se a senha possuir caracteres especiais, eles precisam ser codificados para uso em uma URL.
+
+O PostgreSQL é a única forma de persistência da aplicação. Sem uma `DATABASE_URL` válida, o servidor interrompe a inicialização em vez de usar um armazenamento temporário.
 
 O arquivo `.env` contém informações particulares e já está no `.gitignore`. Ele não deve ser enviado ao GitHub.
 
@@ -218,13 +218,11 @@ src/
 |-- banco/               # Conexão, migrations e inicialização
 |-- config/              # Variáveis de ambiente
 |-- controllers/         # Regras das requisições HTTP
-|-- dados/               # Alternativa em memória usada nos testes
 |-- middlewares/         # Autenticação, autorização e erros
 |-- repositorios/        # Acesso aos dados (camada Model)
 |   `-- postgres/        # Consultas e transações SQL
 |-- routes/              # Endpoints da API
 `-- validacoes/          # Validações reutilizáveis
-tests/                   # Testes da API e da interface
 ```
 
 As rotas recebem as requisições, os controllers aplicam as regras de negócio, os repositórios conversam com o banco e os middlewares protegem o acesso. Essa separação segue a organização Model, Controller, Routes e Middlewares trabalhada durante o curso.
@@ -233,22 +231,9 @@ As rotas recebem as requisições, os controllers aplicam as regras de negócio,
 
 - `npm run dev`: inicia o servidor com recarregamento automático.
 - `npm start`: inicia a aplicação normalmente.
-- `npm test`: executa os testes automatizados.
 - `npm run db:check`: verifica a conexão com o PostgreSQL.
 - `npm run db:migrate`: executa as migrations pendentes.
 - `npm run db:seed`: prepara os usuários e a ficha de demonstração.
-
-## Testes
-
-Para executar a suíte automatizada:
-
-```bash
-npm test
-```
-
-Os testes percorrem o caminho principal dos três perfis: autenticação, permissões, vínculos, criação e edição de fichas, registro de treinos e preservação do histórico. Há cenários específicos para a edição do próprio perfil e para o administrador, que cadastra um personal, altera seus dados e senha, desativa a conta, confirma o bloqueio do acesso e depois a reativa.
-
-Além da suíte automatizada em memória, os fluxos de perfil e gerenciamento de personais foram conferidos com o PostgreSQL para garantir que as alterações realmente permanecem salvas no banco.
 
 ## Licença
 

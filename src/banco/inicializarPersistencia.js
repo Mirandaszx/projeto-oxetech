@@ -28,10 +28,6 @@ async function garantirAdministradorInicial() {
 }
 
 async function inicializarPersistencia() {
-    if (ambiente.persistencia === "memoria") {
-        return;
-    }
-
     await testarConexao();
     await executarMigracoes();
     await garantirAdministradorInicial();

@@ -3,9 +3,11 @@ const { Router } = require("express");
 const controladorAdmin = require("../controllers/adminController");
 const autenticarToken = require("../middlewares/autenticarToken");
 const autorizarPerfis = require("../middlewares/autorizarPerfis");
+const validarUuidParametro = require("../middlewares/validarUuidParametro");
 
 const roteador = Router();
 
+roteador.param("personalId", validarUuidParametro);
 roteador.use(autenticarToken, autorizarPerfis("admin"));
 
 roteador.get("/painel", controladorAdmin.obterPainel);

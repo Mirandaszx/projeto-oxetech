@@ -7,10 +7,7 @@ async function iniciarServidor() {
     await inicializarPersistencia();
 
     const servidor = aplicativo.listen(ambiente.porta, () => {
-        console.log(
-            `Servidor Iron Pump rodando em http://localhost:${ambiente.porta} `
-            + `com persistencia em ${ambiente.persistencia}`
-        );
+        console.log(`Servidor Iron Pump rodando em http://localhost:${ambiente.porta}`);
     });
 
     async function encerrarServidor() {
