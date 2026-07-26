@@ -241,6 +241,21 @@ function prepararFichaAluno(fichaId) {
     }));
 }
 
+function fecharRegistroTreinoAluno() {
+    estado.aluno.fichaRegistroId = "";
+    estado.aluno.exerciciosRegistro = [];
+    redefinirFormulario("registroTreino");
+}
+
+function rolarAteElemento(seletor) {
+    globalThis.requestAnimationFrame(() => {
+        document.querySelector(seletor)?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    });
+}
+
 function prepararRegistroDaFicha(fichaId) {
     const ficha = estado.aluno.fichas.find((item) => item.id === fichaId);
 
@@ -715,11 +730,15 @@ async function lidarClique(evento) {
             await removerFichaPersonal(botao.dataset.fichaId || "");
         }
     } else if (acao === "nova-ficha-aluno") {
+        fecharRegistroTreinoAluno();
         prepararFichaAluno("");
         renderizar();
+        rolarAteElemento("#editor-ficha-aluno");
     } else if (acao === "editar-ficha-aluno") {
+        fecharRegistroTreinoAluno();
         prepararFichaAluno(botao.dataset.fichaId || "");
         renderizar();
+        rolarAteElemento("#editor-ficha-aluno");
     } else if (acao === "remover-ficha-aluno") {
         const confirmou = typeof globalThis.confirm !== "function"
             || globalThis.confirm("Excluir definitivamente esta ficha? Os treinos registrados continuarao no historico.");
@@ -737,9 +756,7 @@ async function lidarClique(evento) {
         prepararRegistroDaFicha(botao.dataset.fichaId || "");
         renderizar();
     } else if (acao === "cancelar-registro-treino") {
-        estado.aluno.fichaRegistroId = "";
-        estado.aluno.exerciciosRegistro = [];
-        redefinirFormulario("registroTreino");
+        fecharRegistroTreinoAluno();
         renderizar();
     } else if (acao === "encerrar-vinculo") {
         const confirmou = typeof globalThis.confirm !== "function"
